@@ -57,7 +57,7 @@ If no argument is provided, the default is 50 trials.
 
 The analysis script:
 
-    render_benchmarks.py
+    make_plots.py
 
 reads `benchmark_results.csv`, computes aggregated statistics, and writes:
 
@@ -73,7 +73,7 @@ This step always runs inside the project’s virtual environment.
         src/
         include/
         benchmark_stats2.cpp
-        render_benchmarks.py
+        make_plots.py
         run_cpp_only.sh
         run_experiment.sh
         figs/
