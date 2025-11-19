@@ -61,6 +61,7 @@ int main(int argc, char** argv) {
     }
 
     // Grid in (n,d)
+    // TODO: consider making these command-line parameters as well
     const int d_values[] = {2, 3, 4};
     const int n_values[] = {2, 3, 4};
 
