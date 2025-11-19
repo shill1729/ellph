@@ -1,0 +1,74 @@
+[
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/CauchySimplex.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/CauchySimplex.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/CauchySimplex.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/CauchySimplex.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/Ellipsoid.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/Ellipsoid.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/Ellipsoid.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/Ellipsoid.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/KObjective.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/KObjective.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/KObjective.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/KObjective.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/LPClarkson.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/LPClarkson.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/LPClarkson.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/LPClarkson.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/LPSeidel.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/LPSeidel.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/LPSeidel.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/LPSeidel.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/LPType.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/LPType.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/LPType.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/LPType.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/OptimalRadius.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/OptimalRadius.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/OptimalRadius.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/OptimalRadius.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/PGD.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/PGD.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/PGD.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/PGD.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/RandomEllipsoidGenerator.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/RandomEllipsoidGenerator.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/RandomEllipsoidGenerator.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/RandomEllipsoidGenerator.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/SLSQP.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/SLSQP.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/SLSQP.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/SLSQP.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/src/Simplex.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/src/Simplex.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/src/Simplex.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/src/Simplex.cpp.o"
+},
+{
+  "directory": "/Users/seanhill/Visual_Code_Projects/ellph/build",
+  "command": "/usr/bin/clang++  -I/Users/seanhill/Visual_Code_Projects/ellph/include -I/opt/homebrew/include -I/opt/homebrew/opt/eigen/include/eigen3 -I/opt/homebrew/opt/boost/include -I/opt/homebrew/opt/nlopt/include -g -std=c++20 -arch arm64 -o CMakeFiles/benchmark_stats2.dir/benchmark_stats2.cpp.o -c /Users/seanhill/Visual_Code_Projects/ellph/benchmark_stats2.cpp",
+  "file": "/Users/seanhill/Visual_Code_Projects/ellph/benchmark_stats2.cpp",
+  "output": "CMakeFiles/benchmark_stats2.dir/benchmark_stats2.cpp.o"
+}
+]

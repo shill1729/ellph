@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Mac",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "/opt/homebrew/opt/eigen/include/eigen3",
+                "/opt/homebrew/opt/boost/include",
+                "/opt/homebrew/opt/nlopt/include",
+                "/opt/homebrew/opt/sfml/include"
+            ],
+            "defines": [],
+            "cStandard": "c17",
+            "cppStandard": "c++20",
+            "intelliSenseMode": "macos-clang-arm64",
+            "compilerPath": "/usr/bin/clang++"
+        }
+    ],
+    "version": 4
+}

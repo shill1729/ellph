@@ -1,0 +1,32 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build",
+      "type": "shell",
+      "command": "clang++",
+      "args": [
+        "-std=c++20", "-O3", "-march=native",
+        "-I${workspaceFolder}/include",
+        "-I/opt/homebrew/include",        // Apple Silicon
+        "-I/opt/homebrew/opt/eigen/include/eigen3",
+        "-I/opt/homebrew/opt/boost/include",
+        "-I/opt/homebrew/opt/nlopt/include",
+        // Linking SFML, Boost, and NLopt
+        "-L/opt/homebrew/opt/boost/lib",
+        "-L/opt/homebrew/opt/nlopt/lib",
+        // All source files in /src
+        "${workspaceFolder}/src/*.cpp",
+        // Main file we are compiling
+				"${file}",
+        "-lnlopt",
+				"-o",
+				// "${fileDirname}/${fileBasenameNoExtension}" // Compiles to workspace folder
+				"${workspaceFolder}/output/${fileBasenameNoExtension}" //Compiles to output folder
+      ],
+      "options": { "cwd": "${workspaceFolder}" },
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}

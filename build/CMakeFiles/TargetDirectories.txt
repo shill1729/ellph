@@ -1,0 +1,3 @@
+/Users/seanhill/Visual_Code_Projects/ellph/build/CMakeFiles/benchmark_stats2.dir
+/Users/seanhill/Visual_Code_Projects/ellph/build/CMakeFiles/edit_cache.dir
+/Users/seanhill/Visual_Code_Projects/ellph/build/CMakeFiles/rebuild_cache.dir
