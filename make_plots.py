@@ -15,13 +15,13 @@ from pathlib import Path
 # Configuration knobs
 # ----------------------------------------------------------------------
 
-CSV_PATH = Path("benchmark_results.csv")
+CSV_PATH = Path("build/benchmark_results.csv")
 
 # Which fixed d to use when plotting runtime vs n
-FIXED_D_FOR_N_SWEEPS = [2, 4, 5]
+FIXED_D_FOR_N_SWEEPS = [2, 3, 4, 5, 10, 20, 50]
 
 # Which fixed n to use when plotting runtime vs d
-FIXED_N_FOR_D_SWEEPS = [2, 3, 4, 5, 10, 20, 50]
+FIXED_N_FOR_D_SWEEPS = [2, 3, 4]
 
 # Methods order for consistent legend / tables
 METHOD_ORDER = [
