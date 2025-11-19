@@ -33,6 +33,6 @@ pip install --upgrade pip >/dev/null
 pip install -r ../requirements.txt >/dev/null 2>&1 || pip install pandas numpy matplotlib >/dev/null
 
 echo "=== Rendering plots and LaTeX tables ==="
-python ../render_benchmarks.py
+python ../make_plots.py
 
 echo "=== Done. Results in figs/ and tables/. ==="
