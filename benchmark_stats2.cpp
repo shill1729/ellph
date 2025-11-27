@@ -67,7 +67,7 @@ int main(int argc, char** argv) {
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
-    std::filesystem::create_directories("build");
+    // std::filesystem::create_directories("build");
     std::ofstream ofs(filename);
     if (!ofs) {
         std::cerr << "Error: could not open " << filename << " for writing.\n";
