@@ -20,25 +20,46 @@ add_executable(benchmark_stats2
     benchmark_stats2.cpp
 )
 
-# Include directories
-target_include_directories(benchmark_stats2 PRIVATE
-    "${CMAKE_CURRENT_SOURCE_DIR}/include"
-    "/opt/homebrew/include"
-    "/opt/homebrew/opt/eigen/include/eigen3"
-    "/opt/homebrew/opt/boost/include"
-    "/opt/homebrew/opt/nlopt/include"
-)
 
-# Library search paths
-target_link_directories(benchmark_stats2 PRIVATE
-    "/opt/homebrew/opt/boost/lib"
-    "/opt/homebrew/opt/nlopt/lib"
-)
 
-# Link against NLopt (Boost is header-only for what you are doing)
-target_link_libraries(benchmark_stats2 PRIVATE
-    nlopt
-)
+if(APPLE)
+    # Include directories
+    target_include_directories(benchmark_stats2 PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "/opt/homebrew/include"
+        "/opt/homebrew/opt/eigen/include/eigen3"
+        "/opt/homebrew/opt/boost/include"
+        "/opt/homebrew/opt/nlopt/include"
+    )
+
+    # Library search paths
+    target_link_directories(benchmark_stats2 PRIVATE
+        "/opt/homebrew/opt/boost/lib"
+        "/opt/homebrew/opt/nlopt/lib"
+    )
+
+    # Link against NLopt (Boost is header-only for what you are doing)
+    target_link_libraries(benchmark_stats2 PRIVATE
+        nlopt
+    )
+else()
+    # Include directories
+    target_include_directories(benchmark_stats2 PRIVATE
+        "${CMAKE_CURRENT_SOURCE_DIR}/include"
+    )
+    
+    # Find and link NLopt
+    find_package(NLopt REQUIRED)
+    target_link_libraries(benchmark_stats2 PRIVATE NLopt::nlopt)
+    
+    # Find Eigen3
+    find_package(Eigen3 REQUIRED)
+    target_link_libraries(benchmark_stats2 PRIVATE Eigen3::Eigen)
+    
+    # Boost (header-only)
+    find_package(Boost REQUIRED)
+    target_include_directories(benchmark_stats2 PRIVATE ${Boost_INCLUDE_DIRS})
+endif()
 
 # Put the binary in build/output/benchmark_stats2
 set_target_properties(benchmark_stats2 PROPERTIES

@@ -1,8 +1,6 @@
 # Ellipsoidal Intersection Benchmarking
 
-This repository contains an experimental framework for benchmarking five algorithms that compute the optimal intersection radius of non-homogeneous ellipsoids in arbitrary dimension. The C++ implementation generates random ellipsoid instances, evaluates each solver across a grid of values for the number of ellipsoids and the ambient dimension, measures runtimes, and writes empirical statistics to a CSV file. A separate Python analysis script consumes this CSV and produces publication-ready figures and LaTeX tables.
-
-The experiment is designed for reproducibility. All build steps are handled by CMake, and all analysis steps run inside a local Python virtual environment. Two driver scripts orchestrate the workflow.
+This repository contains an experimental framework for benchmarking five algorithms that compute the optimal intersection radius of non-homogeneous ellipsoids in arbitrary dimension. The C++ implementation generates random ellipsoid instances, evaluates each solver across a grid of values for the number of ellipsoids and the ambient dimension, measures runtimes, and writes empirical statistics to a CSV file. A separate Python script makes plots and tables out of it.
 
 ## Dependencies and Versions
 
