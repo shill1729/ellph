@@ -30,9 +30,9 @@ From the repository root, configure and build using the standard out-of-source w
     cmake --build build --config Release
     ./build/output/benchmark_stats2
 
-    and if you have the python environment already setup:
+    # and if you have the python environment already setup:
     python make_plots.py
-    Otherwise, set it up first with numpy, pandas and matplotlib or use the bash scripts below.
+    
 
 This produces the executable:
 
