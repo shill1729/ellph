@@ -83,4 +83,4 @@ and
 
 with
 
-    .\build\output\benchmark_stats2.exe
+    .\build\output\Release\benchmark_stats2.exe
