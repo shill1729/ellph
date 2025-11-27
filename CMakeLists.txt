@@ -49,15 +49,20 @@ else()
     )
     
     # Find and link NLopt
-    find_package(NLopt REQUIRED)
-    target_link_libraries(benchmark_stats2 PRIVATE NLopt::nlopt)
-    
+    find_package(nlopt CONFIG REQUIRED)
+    if(TARGET nlopt::nlopt)
+        target_link_libraries(benchmark_stats2 PRIVATE nlopt::nlopt)
+    elseif(TARGET NLopt::nlopt)
+        target_link_libraries(benchmark_stats2 PRIVATE NLopt::nlopt)
+    else()
+        message(FATAL_ERROR "nlopt found but no imported target")
+    endif()
     # Find Eigen3
-    find_package(Eigen3 REQUIRED)
+    find_package(Eigen3 CONFIG REQUIRED)
     target_link_libraries(benchmark_stats2 PRIVATE Eigen3::Eigen)
     
     # Boost (header-only)
-    find_package(Boost REQUIRED)
+    find_package(Boost CONFIG REQUIRED)
     target_include_directories(benchmark_stats2 PRIVATE ${Boost_INCLUDE_DIRS})
 endif()
 
