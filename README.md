@@ -55,3 +55,24 @@ Now you can simply run
 To automatically get plots saved into figs/ and tables/.
 
 
+# Windows
+Install vcpkg
+
+    git clone https://github.com/microsoft/vcpkg.git C:\vcpkg
+    cd C:\vcpkg
+    .\bootstrap-vcpkg.bat
+    .\vcpkg integrate install
+    setx PATH "$($env:PATH);C:\vcpkg"
+
+Close and reopen your terminal.
+Then install eigen, boost and nlopt
+
+    vcpkg install eigen3:x64-windows boost:x64-windows nlopt:x64-windows
+
+Then just replace
+    
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+
+with
+
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
