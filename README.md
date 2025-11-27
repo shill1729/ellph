@@ -76,3 +76,11 @@ Then just replace
 with
 
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=C:\vcpkg\scripts\buildsystems\vcpkg.cmake
+
+and
+
+    ./build/output/benchmark_stats2
+
+with
+
+    .\build\output\benchmark_stats2.exe
