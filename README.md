@@ -4,20 +4,19 @@ This repository contains an experimental framework for benchmarking five algorit
 
 ## Dependencies and Versions
 
-The C++ code has been tested on macOS with the following Homebrew packages:
+The C++ code has been tested on macOS with the following packages installed via Homebrew:
 
 - NLopt 2.10.0
 - Boost 1.89.0_1
 - Eigen 5.0.1
 
-The Python analysis uses the following versions:
+The Python script uses the following versions:
 
 - Python 3.13
 - NumPy 2.3.4
 - pandas 2.3.3
 - Matplotlib 3.10.7
 
-A virtual environment ensures these versions remain stable for all users.
 
 ## Building with CMake
 
