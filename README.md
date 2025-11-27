@@ -33,6 +33,7 @@ This produces and runs the executable:
 
 ## Manual plots
 Now create a virtual environment
+    
     # Create a virtual environment named 'venv' (or whatever name you prefer)
     python3 -m venv venv
     # Activate it
