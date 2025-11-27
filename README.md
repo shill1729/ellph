@@ -18,7 +18,7 @@ The Python script uses the following versions:
 - Matplotlib 3.10.7
 
 
-## Building with CMake
+## Building and running with CMake
 
 From the repository root, configure and build:
 
@@ -27,13 +27,18 @@ From the repository root, configure and build:
     cmake --build build --config Release
     ./build/output/benchmark_stats2
 
-    # and if you have the python environment already setup:
-    python make_plots.py
-    
-
 This produces and runs the executable:
 
     build/output/benchmark_stats2
+
+## Manual plots
+Now create a virtual environment
+    # Create a virtual environment named 'venv' (or whatever name you prefer)
+    python3 -m venv venv
+    # Activate it
+    source venv/bin/activate
+    # Install the specific versions
+    pip install numpy==2.3.4 pandas==2.3.3 matplotlib==3.10.7
 
 ## Running the Benchmark
 
