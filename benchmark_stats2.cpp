@@ -62,8 +62,8 @@ int main(int argc, char** argv) {
 
     // Grid in (n,d)
     // TODO: consider making these command-line parameters as well
-    const int d_values[] = {2, 3, 4};
-    const int n_values[] = {2, 3, 4};
+    const int d_values[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50};
+    const int n_values[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
