@@ -85,7 +85,7 @@ with
 
     .\build\output\Release\benchmark_stats2.exe
 
-For the python script you can just change
+For the python script do this to start instead:
 
     python -m venv venv
     venv\Scripts\activate
