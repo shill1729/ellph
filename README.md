@@ -26,9 +26,13 @@ A virtual environment ensures these versions remain stable for all users.
 From the repository root, configure and build using the standard out-of-source workflow:
 
     mkdir -p build
-    cd build
-    cmake -DCMAKE_BUILD_TYPE=Release ..
-    cmake --build . --config Release -j8
+    cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
+    cmake --build build --config Release
+    ./build/output/benchmark_stats2
+
+    and if you have the python environment already setup:
+    python make_plots.py
+    Otherwise, set it up first with numpy, pandas and matplotlib or use the bash scripts below.
 
 This produces the executable:
 

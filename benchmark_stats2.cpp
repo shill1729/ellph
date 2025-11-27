@@ -62,11 +62,15 @@ int main(int argc, char** argv) {
 
     // Grid in (n,d)
     // TODO: consider making these command-line parameters as well
-    const int d_values[] = {2, 3, 4, 10, 20, 50};
-    const int n_values[] = {2, 3, 4};
+    const int d_values[] = {2, 3, 4, 5, 7, 10, 20, 30};
+    const int n_values[] = {2, 3, 4, 5, 7, 10, 20, 30};
 
     // Open CSV output
-    const std::string filename = "benchmark_results.csv";
+    // TODO: when we build this with tasks.json, and run make_plots.py, the latter is looking in /build.
+    // But when we run it with cmake, its trying to open a csv to build/build/benchmarks which doesnt exist
+    // Use build/benchmark_results.csv for tasks.json and no prefix for cmake...
+    const std::string filename = "build/benchmark_results.csv";
+    std::filesystem::create_directories("build");
     std::ofstream ofs(filename);
     if (!ofs) {
         std::cerr << "Error: could not open " << filename << " for writing.\n";

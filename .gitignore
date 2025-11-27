@@ -8,3 +8,34 @@
 /output
 /tables
 /test_generator.cpp
+
+# CMake build trees and generator outputs
+/build/
+/cmake-build-*/
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+compile_commands.json
+install_manifest.txt
+
+# Binaries and runtime outputs
+/output/
+*.exe
+*.out
+*.app
+
+# Experiment artifacts
+/build/benchmark_results.csv
+/figs/
+/tables/
+
+# Python env/cache
+.venv/
+venv/
+__pycache__/
+*.pyc
+
+# Editors
+.vscode/
+.DS_Store

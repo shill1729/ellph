@@ -17,11 +17,6 @@ from pathlib import Path
 
 CSV_PATH = Path("build/benchmark_results.csv")
 
-# Which fixed d to use when plotting runtime vs n
-FIXED_D_FOR_N_SWEEPS = [2, 3, 4, 5, 10, 20, 50]
-
-# Which fixed n to use when plotting runtime vs d
-FIXED_N_FOR_D_SWEEPS = [2, 3, 4]
 
 # Methods order for consistent legend / tables
 METHOD_ORDER = [
@@ -317,6 +312,9 @@ def main():
     )
     # If df is already aggregated (one row per (d,n,method)), grouped == df
     df_ag = grouped
+
+    FIXED_D_FOR_N_SWEEPS = sorted(df_ag["d"].unique())
+    FIXED_N_FOR_D_SWEEPS = sorted(df_ag["n"].unique())
 
     # Plots: runtime vs n for each fixed d
     for d in FIXED_D_FOR_N_SWEEPS:
