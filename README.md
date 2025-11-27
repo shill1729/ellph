@@ -23,7 +23,7 @@ A virtual environment ensures these versions remain stable for all users.
 
 ## Building with CMake
 
-From the repository root, configure and build using the standard out-of-source workflow:
+From the repository root, configure and build:
 
     mkdir -p build
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
@@ -34,11 +34,9 @@ From the repository root, configure and build using the standard out-of-source w
     python make_plots.py
     
 
-This produces the executable:
+This produces and runs the executable:
 
     build/output/benchmark_stats2
-
-VS Code users may rely on the CMake Tools extension, which automatically configures and builds the project.
 
 ## Running the Benchmark
 
@@ -46,7 +44,7 @@ The executable accepts a single integer argument specifying the number of random
 
     benchmark_results.csv
 
-Two helper scripts are provided:
+Two helper shell scripts are provided:
 
 - `run_cpp_only.sh` runs only the C++ benchmark after the project has been configured and built.
 - `run_experiment.sh` builds the project if necessary, runs the benchmark, activates or creates a virtual environment, installs required Python packages, and runs the renderer that generates figures and LaTeX tables.
