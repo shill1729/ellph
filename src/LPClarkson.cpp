@@ -29,21 +29,6 @@ ClarksonResult clarkson_iterative(const EllipsoidLPOracle& O,
         std::sort(C.begin(), C.end());
         C.erase(std::unique(C.begin(), C.end()), C.end());
 
-        // // Compute basis of C
-        // B = O.compute_basis(C);
-
-        // // Scan violators in S; also accumulate their total weight
-        // double Wviol = 0.0, Wall = 0.0;
-        // std::vector<int> violators;
-        // violators.reserve(n);
-        // for (int t = 0; t < n; ++t) {
-        //     ++vt;
-        //     if (O.is_violator(B, S[t])) {
-        //         violators.push_back(t);
-        //         Wviol += w[t];
-        //     }
-        //     Wall += w[t];
-        // }
         // Compute basis of C
         B = O.compute_basis(C);
 

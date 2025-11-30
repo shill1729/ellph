@@ -61,7 +61,6 @@ int main(int argc, char** argv) {
     }
 
     // Grid in (n,d)
-    // TODO: consider making these command-line parameters as well
     const int d_values[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50};
     const int n_values[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30};
 
@@ -87,7 +86,7 @@ int main(int argc, char** argv) {
             RunningStats stats_raw_cauchy;
             RunningStats stats_lp_seidel;
             RunningStats stats_lp_clarkson;
-            // TODO consider exposing this fixed seed
+        
             // Base seed; perturbed by trial index to vary instances
             const unsigned long long base_seed = 12345ull
                                                  + 1000ull * static_cast<unsigned long long>(d)
@@ -172,7 +171,13 @@ int main(int argc, char** argv) {
 
                     ClarksonResult out;
                     double ms = time_ms([&]() {
-                        out = clarkson_iterative(O, S, co);
+                        
+                        try{
+                            out = clarkson_iterative(O, S, co);
+                        } catch(nlopt::roundoff_limited &e)
+                        {
+                            std::cerr << "Optimization stopped due to roundoff limits." << std::endl;
+                        }
                     });
                     (void)out;
                     stats_lp_clarkson.push(ms);

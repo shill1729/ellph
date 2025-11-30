@@ -17,13 +17,6 @@ KObjective EllipsoidLPOracle::make_K_for_subset(const std::vector<int>& subset) 
     return make_Kobjective_from_ellipsoids(/*epsilon*/1.0, Es);
 }
 
-
-// uint64_t EllipsoidLPOracle::key_from_indices(const std::vector<int>& idx) {
-//     // order-insensitive hash: 64-bit mix of sorted indices
-//     uint64_t h = 1469598103934665603ULL;
-//     for (int v : idx) { h ^= (uint64_t)(v + 0x9e3779b97f4a7c15ULL); h *= 1099511628211ULL; }
-//     return h;
-// }
 static inline uint64_t fnv_mix(uint64_t h, uint64_t x){
     h ^= x + 0x9e3779b97f4a7c15ULL;
     h *= 1099511628211ULL;
@@ -38,32 +31,6 @@ uint64_t EllipsoidLPOracle::key_from_set(const std::vector<int>& idx) {
     return h;
 }
 
-// Changing!
-// LPEval EllipsoidLPOracle::evaluate(const std::vector<int>& B) const {
-//     if (B.empty()) {
-//         // f(∅)=0; m doesn't matter. Return sane defaults.
-//         LPEval z; z.eps_star = 0.0;
-//         z.m = Eigen::VectorXd::Zero(d_);
-//         z.dists = Eigen::VectorXd::Zero(0);
-//         z.lambda = Eigen::VectorXd::Zero(0);
-//         return z;
-//     }
-//     // auto K = make_K_for_subset(B);
-//     // auto res = optimal_radius(K, P_.inner);
-//     // // Bring λ* back to a vector aligned to B
-//     // Eigen::VectorXd lam = res.lambda_star;        // size |B|
-//     // Eigen::VectorXd d   = res.dists;              // size |B|
-//     // return {res.eps_star, K.centroid(), d, lam};
-//     auto key = key_from_set(B);
-//     auto it = cache_.find(key);
-//     if (it != cache_.end()) return it->second;
-
-//     auto K = make_K_for_subset(B);
-//     auto res = optimal_radius(K, P_.inner);
-//     LPEval ev{res.eps_star, K.centroid(), res.dists, res.lambda_star};
-//     cache_.emplace(key, ev);
-//     return ev;
-// }
 LPEval EllipsoidLPOracle::evaluate(const std::vector<int>& B) const {
     if (B.empty()) {
         LPEval z; z.eps_star = 0.0;
@@ -101,22 +68,6 @@ LPEval EllipsoidLPOracle::evaluate(const std::vector<int>& B) const {
     return LPEval{cv.eps_star, cv.m, d, Eigen::VectorXd()};
 }
 
-
-// bool EllipsoidLPOracle::is_violator(const LPBasis& B, int i) const {
-//     // Seed: empty basis cannot certify anything; force-add the first constraint.
-//     if (B.idx.empty()) return true;
-
-//     // Get the current solution (centroid m(B), radius eps*(B)) for the basis.
-//     LPEval evB = evaluate(B.idx);
-
-//     const Ellipsoid& Ei = all_[i];
-//     const Eigen::VectorXd diff = evB.m - Ei.center();
-//     const double di = diff.transpose() * (Ei.precision() * diff); // ||diff||^2_{A_i^{-1}}
-
-//     // Violates if outside the certified ball
-//     return (std::sqrt(di) > evB.eps_star + P_.tight_tol);
-// }
-
 bool EllipsoidLPOracle::is_violator(const LPBasis& B, int i, const LPEval& evB) const {
     if (B.idx.empty()) return true; // seed the first constraint
     const Ellipsoid& Ei = all_[i];
@@ -131,28 +82,6 @@ bool EllipsoidLPOracle::is_violator(const LPBasis& B, int i) const {
     return is_violator(B, i, evB);
 }
 
-// std::vector<int> EllipsoidLPOracle::shrink_tight(const std::vector<int>& tight,
-//                                                  const std::vector<int>& superset,
-//                                                  const LPEval& ev) const {
-//     // Generic position => |tight|<=D_+1. In degeneracy, pick the (D_+1) most "tight".
-//     if ((int)tight.size() <= d_ + 1) return tight;
-//     // Build pair (gap, global_idx), smaller gap preferred
-//     struct Item{ double gap; int gidx; };
-//     std::vector<Item> items; items.reserve(tight.size());
-//     for (int t = 0; t < (int)tight.size(); ++t) {
-//         int gidx = tight[t];
-//         // locate gidx inside superset to get its local position in ev.dists
-//         int pos = int(std::find(superset.begin(), superset.end(), gidx) - superset.begin());
-//         // const double gap = std::abs(std::sqrt(ev.dists[pos]) - ev.eps_star);
-//         const double gap = std::abs(ev.dists[pos] - ev.eps_star);
-//         items.push_back({gap, gidx});
-//     }
-//     std::nth_element(items.begin(), items.begin() + (d_+1), items.end(),
-//                      [](const Item& a, const Item& b){ return a.gap < b.gap; });
-//     std::vector<int> picked; picked.reserve(d_+1);
-//     for (int j = 0; j < d_+1; ++j) picked.push_back(items[j].gidx);
-//     return picked;
-// }
 std::vector<int> EllipsoidLPOracle::shrink_tight(const std::vector<int>& tight,
                                                  const std::vector<int>& superset,
                                                  const LPEval& ev) const {
@@ -191,24 +120,7 @@ LPBasis EllipsoidLPOracle::compute_basis(const std::vector<int>& C) const {
         // if (std::abs(std::sqrt(ev.dists[t]) - ev.eps_star) <= P_.tight_tol) T.push_back(C[t]);
         if (std::abs(ev.dists[t] - ev.eps_star) <= P_.tight_tol) T.push_back(C[t]);
     }
-    // if (T.empty()) {
-    //     // Numerical fallback: pick the argmax distance as tight
-    //     int argmax = 0; double best = -1.0;
-
-    //     // Need to change this:
-    //     // for (int t = 0; t < (int)C.size(); ++t) {
-    //     //     double val = ev.dists[t];
-    //     //     if (val > best) { best = val; argmax = t; }
-    //     // }
-    //     // T.push_back(C[argmax]);
-    //     for (int t = 0; t < (int)C.size(); ++t) 
-    //     {
-    //         if (std::abs(ev.dists[t] - ev.eps_star) <= P_.tight_tol)
-    //         {
-    //             T.push_back(C[t]);
-    //         }
-    //     }
-    // }
+    
     if (T.empty()) {
         int argmax = 0; double best = -1.0;
         for (int t = 0; t < (int)C.size(); ++t) {

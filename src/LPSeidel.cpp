@@ -2,29 +2,7 @@
 #include <random>
 #include <algorithm>
 
-// static SeidelResult seidel_inner(const EllipsoidLPOracle& O,
-//                                  const std::vector<int>& perm,
-//                                  int upto,
-//                                  LPBasis B,
-//                                  int depth,
-//                                  int& vt_count)
-// {
-//     if (upto < 0) return {B, vt_count};
-//     if (depth <= 0) return {B, vt_count}; // safety guard
-//     // Solve with first 'upto' elements processed
-//     SeidelResult r = seidel_inner(O, perm, upto-1, B, depth, vt_count);
 
-//     int x = perm[upto];
-//     ++vt_count;
-//     if (!O.is_violator(r.basis, x)) {
-//         return r; // nothing to do
-//     }
-//     // x violates => it must be in the basis; recurse with x added to prefix
-//     std::vector<int> C = r.basis.idx;
-//     C.push_back(x);
-//     LPBasis Bnew = O.compute_basis(C);
-//     return seidel_inner(O, perm, upto-1, Bnew, depth-1, vt_count);
-// }
 static SeidelResult seidel_inner(const EllipsoidLPOracle& O,
                                  const std::vector<int>& perm,
                                  int upto,
@@ -53,20 +31,7 @@ static SeidelResult seidel_inner(const EllipsoidLPOracle& O,
     return seidel_inner(O, perm, upto-1, Bnew, depth-1, vt_count);
 }
 
-// SeidelResult seidel_incremental(const EllipsoidLPOracle& O,
-//                                 const std::vector<int>& S,
-//                                 SeidelOptions opt)
-// {
-//     std::vector<int> perm = S;
-//     std::mt19937_64 rng(opt.seed);
-//     std::shuffle(perm.begin(), perm.end(), rng);
 
-//     int vt = 0;
-//     LPBasis B0{{}, 0.0};
-//     auto out = seidel_inner(O, perm, (int)perm.size()-1, B0, opt.max_depth, vt);
-//     out.violation_tests = vt;
-//     return out;
-// }
 SeidelResult seidel_incremental(const EllipsoidLPOracle& O,
                                 const std::vector<int>& S,
                                 SeidelOptions opt)
