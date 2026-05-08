@@ -17,6 +17,27 @@ KObjective EllipsoidLPOracle::make_K_for_subset(const std::vector<int>& subset) 
     return make_Kobjective_from_ellipsoids(/*epsilon*/1.0, Es);
 }
 
+static std::vector<Ellipsoid> ellipsoid_subset(const std::vector<Ellipsoid>& all,
+                                               const std::vector<int>& subset) {
+    std::vector<Ellipsoid> Es;
+    Es.reserve(subset.size());
+    for (int idx : subset) Es.push_back(all[idx]);
+    return Es;
+}
+
+static SolverKind dual_solver_kind(BasisSolverKind solver) {
+    switch (solver) {
+        case BasisSolverKind::DualPGD:
+            return SolverKind::PGD;
+        case BasisSolverKind::DualCauchy:
+            return SolverKind::Cauchy;
+        case BasisSolverKind::DualSLSQP:
+        case BasisSolverKind::PrimalSOCP:
+            return SolverKind::SLSQP;
+    }
+    return SolverKind::SLSQP;
+}
+
 static inline uint64_t fnv_mix(uint64_t h, uint64_t x){
     h ^= x + 0x9e3779b97f4a7c15ULL;
     h *= 1099511628211ULL;
@@ -47,9 +68,15 @@ LPEval EllipsoidLPOracle::evaluate(const std::vector<int>& B) const {
         // Solve on a canonical order (sorted), but cache only (eps, m)
         std::vector<int> Bsorted = B;
         std::sort(Bsorted.begin(), Bsorted.end());
-        auto K = make_K_for_subset(Bsorted);
-        auto res = optimal_radius(K, P_.inner);  // returns eps_star, dists (in that order), lambda_star
-        cv = CacheVal{res.eps_star, K.centroid()};
+        if (P_.inner == BasisSolverKind::PrimalSOCP) {
+            auto Es = ellipsoid_subset(all_, Bsorted);
+            auto res = solve_socp_alglib(Es);
+            cv = CacheVal{res.eps_star, res.m};
+        } else {
+            auto K = make_K_for_subset(Bsorted);
+            auto res = optimal_radius(K, dual_solver_kind(P_.inner));
+            cv = CacheVal{res.eps_star, K.centroid()};
+        }
         cache_.emplace(key, cv);
     } else {
         cv = it->second;

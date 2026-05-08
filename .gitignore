@@ -30,6 +30,9 @@ install_manifest.txt
 /figs/
 /tables/
 
+# Local third-party source trees
+/third_party/alglib-cpp/
+
 # Python env/cache
 .venv/
 venv/

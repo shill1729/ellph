@@ -10,9 +10,58 @@ if(NOT CMAKE_BUILD_TYPE)
     set(CMAKE_BUILD_TYPE Release CACHE STRING "Build type" FORCE)
 endif()
 
-# Your sources: all src/*.cpp plus the benchmark main
+set(ALGLIB_ROOT "" CACHE PATH "Path to ALGLIB C++ source tree")
+if(NOT ALGLIB_ROOT)
+    if(DEFINED ENV{ALGLIB_ROOT})
+        set(ALGLIB_ROOT "$ENV{ALGLIB_ROOT}")
+    else()
+        set(ALGLIB_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/alglib-cpp")
+    endif()
+endif()
+
+set(ALGLIB_SRC_DIR "${ALGLIB_ROOT}/src")
+set(ALGLIB_REQUIRED_FILES
+    "${ALGLIB_SRC_DIR}/ap.cpp"
+    "${ALGLIB_SRC_DIR}/ap.h"
+    "${ALGLIB_SRC_DIR}/alglibinternal.cpp"
+    "${ALGLIB_SRC_DIR}/alglibinternal.h"
+    "${ALGLIB_SRC_DIR}/alglibmisc.cpp"
+    "${ALGLIB_SRC_DIR}/alglibmisc.h"
+    "${ALGLIB_SRC_DIR}/linalg.cpp"
+    "${ALGLIB_SRC_DIR}/linalg.h"
+    "${ALGLIB_SRC_DIR}/solvers.cpp"
+    "${ALGLIB_SRC_DIR}/solvers.h"
+    "${ALGLIB_SRC_DIR}/optimization.cpp"
+    "${ALGLIB_SRC_DIR}/optimization.h"
+    "${ALGLIB_SRC_DIR}/kernels_avx2.h"
+    "${ALGLIB_SRC_DIR}/kernels_fma.h"
+    "${ALGLIB_SRC_DIR}/kernels_sse2.h"
+    "${ALGLIB_SRC_DIR}/stdafx.h"
+)
+foreach(ALGLIB_FILE IN LISTS ALGLIB_REQUIRED_FILES)
+    if(NOT EXISTS "${ALGLIB_FILE}")
+        message(FATAL_ERROR
+            "Missing ALGLIB file: ${ALGLIB_FILE}\n"
+            "Download ALGLIB C++ and either place it at third_party/alglib-cpp "
+            "or configure with -DALGLIB_ROOT=/path/to/alglib-cpp.")
+    endif()
+endforeach()
+
+add_library(alglib STATIC
+    "${ALGLIB_SRC_DIR}/ap.cpp"
+    "${ALGLIB_SRC_DIR}/alglibinternal.cpp"
+    "${ALGLIB_SRC_DIR}/alglibmisc.cpp"
+    "${ALGLIB_SRC_DIR}/linalg.cpp"
+    "${ALGLIB_SRC_DIR}/solvers.cpp"
+    "${ALGLIB_SRC_DIR}/optimization.cpp"
+)
+target_include_directories(alglib PUBLIC "${ALGLIB_SRC_DIR}")
+
+# all src/*.cpp plus the benchmark main
 file(GLOB ELLPH_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/geometry/*.cpp"
+    "${CMAKE_CURRENT_SOURCE_DIR}/src/solvers/*.cpp"
 )
 
 add_executable(benchmark_stats2
@@ -26,6 +75,8 @@ if(APPLE)
     # Include directories
     target_include_directories(benchmark_stats2 PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/geometry"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/solvers"
         "/opt/homebrew/include"
         "/opt/homebrew/opt/eigen/include/eigen3"
         "/opt/homebrew/opt/boost/include"
@@ -41,19 +92,22 @@ if(APPLE)
     # Link against NLopt (Boost is header-only for what you are doing)
     target_link_libraries(benchmark_stats2 PRIVATE
         nlopt
+        alglib
     )
 else()
     # Include directories
     target_include_directories(benchmark_stats2 PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/geometry"
+        "${CMAKE_CURRENT_SOURCE_DIR}/include/solvers"
     )
     
     # Find and link NLopt
     find_package(nlopt CONFIG REQUIRED)
     if(TARGET nlopt::nlopt)
-        target_link_libraries(benchmark_stats2 PRIVATE nlopt::nlopt)
+        target_link_libraries(benchmark_stats2 PRIVATE nlopt::nlopt alglib)
     elseif(TARGET NLopt::nlopt)
-        target_link_libraries(benchmark_stats2 PRIVATE NLopt::nlopt)
+        target_link_libraries(benchmark_stats2 PRIVATE NLopt::nlopt alglib)
     else()
         message(FATAL_ERROR "nlopt found but no imported target")
     endif()

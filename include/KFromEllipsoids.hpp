@@ -1,6 +1,6 @@
 #pragma once
-#include "Ellipsoid.hpp"
-#include "KObjective.hpp"
+#include "geometry/Ellipsoid.hpp"
+#include "solvers/KObjective.hpp"
 #include <vector>
 
 inline KObjective make_Kobjective_from_ellipsoids(

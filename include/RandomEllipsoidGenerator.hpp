@@ -1,5 +1,5 @@
 #pragma once
-#include "Ellipsoid.hpp"
+#include "geometry/Ellipsoid.hpp"
 #include <random>
 #include <vector>
 

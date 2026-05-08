@@ -1,10 +1,11 @@
 #include "RandomEllipsoidGenerator.hpp"
 #include "KFromEllipsoids.hpp"
 #include "OptimalRadius.hpp"
+#include "solvers/SOCP.hpp"
 
-#include "LPType.hpp"
-#include "LPSeidel.hpp"
-#include "LPClarkson.hpp"
+#include "include/solvers/LPType.hpp"
+#include "include/solvers/LPSeidel.hpp"
+#include "include/solvers/LPClarkson.hpp"
 
 #include <chrono>
 #include <cmath>
@@ -49,6 +50,33 @@ struct RunningStats {
     }
 };
 
+struct MethodStats {
+    RunningStats time_ms;
+    RunningStats radius;
+
+    void push(double ms, double eps_star) {
+        time_ms.push(ms);
+        radius.push(eps_star);
+    }
+};
+
+double radius_at(const std::vector<Ellipsoid>& Es, const Eigen::VectorXd& m) {
+    double radius = 0.0;
+    for (const auto& E : Es) {
+        const Eigen::VectorXd diff = m - E.center();
+        const double d2 = diff.transpose() * (E.precision() * diff);
+        radius = std::max(radius, std::sqrt(std::max(0.0, d2)));
+    }
+    return radius;
+}
+
+double full_radius_for_basis(const EllipsoidLPOracle& O,
+                             const std::vector<int>& basis,
+                             const std::vector<Ellipsoid>& Es) {
+    const LPEval ev = O.evaluate(basis);
+    return radius_at(Es, ev.m);
+}
+
 int main(int argc, char** argv) {
     std::cout.setf(std::ios::fixed);
     std::cout.precision(9);
@@ -61,8 +89,8 @@ int main(int argc, char** argv) {
     }
 
     // Grid in (n,d)
-    const int d_values[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30, 40, 50};
-    const int n_values[] = {2, 3, 4, 5, 6, 7, 8, 9, 10, 20, 30};
+    const int d_values[] = {2, 3};
+    const int n_values[] = {2, 3, 4};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
@@ -74,18 +102,21 @@ int main(int argc, char** argv) {
     }
 
     // CSV header
-    ofs << "d,n,method,mean_ms,std_ms,num_trials\n";
+    ofs << "d,n,method,mean_ms,std_ms,mean_radius,num_trials\n";
 
     // Sweep over d, n
     for (int d : d_values) {
         for (int n : n_values) {
 
-            // Running stats for each of the 5 methods at this (n,d)
-            RunningStats stats_raw_slsqp;
-            RunningStats stats_raw_pgd;
-            RunningStats stats_raw_cauchy;
-            RunningStats stats_lp_seidel;
-            RunningStats stats_lp_clarkson;
+            // Running stats for each method at this (n,d)
+            MethodStats stats_raw_slsqp;
+            MethodStats stats_raw_pgd;
+            MethodStats stats_raw_cauchy;
+            MethodStats stats_raw_socp;
+            MethodStats stats_lp_seidel;
+            MethodStats stats_lp_clarkson;
+            MethodStats stats_lp_seidel_socp;
+            MethodStats stats_lp_clarkson_socp;
         
             // Base seed; perturbed by trial index to vary instances
             const unsigned long long base_seed = 12345ull
@@ -113,11 +144,12 @@ int main(int argc, char** argv) {
 
                 // Build objective and LP oracle for this instance
                 auto K = make_Kobjective_from_ellipsoids(1.0, Es);
-                EllipsoidLPOracle O(Es, d, LPParams{SolverKind::SLSQP, 1e-8});
+                EllipsoidLPOracle O(Es, d, LPParams{BasisSolverKind::DualSLSQP, 1e-8});
+                EllipsoidLPOracle O_socp(Es, d, LPParams{BasisSolverKind::PrimalSOCP, 1e-5});
                 std::vector<int> S(n);
                 std::iota(S.begin(), S.end(), 0);
 
-                // --- Raw: solve once on full set with three inner solvers ---
+                // --- Raw: solve once on full set ---
 
                 {
                     double eps_star = 0.0;
@@ -125,8 +157,7 @@ int main(int argc, char** argv) {
                         auto res = optimal_radius(K, SolverKind::SLSQP);
                         eps_star = res.eps_star;
                     });
-                    (void)eps_star; // eps_star is computed for sanity; unused here
-                    stats_raw_slsqp.push(ms);
+                    stats_raw_slsqp.push(ms, eps_star);
                 }
 
                 {
@@ -135,8 +166,7 @@ int main(int argc, char** argv) {
                         auto res = optimal_radius(K, SolverKind::PGD);
                         eps_star = res.eps_star;
                     });
-                    (void)eps_star;
-                    stats_raw_pgd.push(ms);
+                    stats_raw_pgd.push(ms, eps_star);
                 }
 
                 {
@@ -145,11 +175,25 @@ int main(int argc, char** argv) {
                         auto res = optimal_radius(K, SolverKind::Cauchy);
                         eps_star = res.eps_star;
                     });
-                    (void)eps_star;
-                    stats_raw_cauchy.push(ms);
+                    stats_raw_cauchy.push(ms, eps_star);
                 }
 
-                // --- LP-type: Seidel + Clarkson (inner = SLSQP here) ---
+                {
+                    double eps_star = 0.0;
+                    bool ok = true;
+                    double ms = time_ms([&]() {
+                        try {
+                            auto res = solve_socp_alglib(Es);
+                            eps_star = res.eps_star;
+                        } catch (const std::exception& e) {
+                            ok = false;
+                            std::cerr << "SOCP failed: " << e.what() << "\n";
+                        }
+                    });
+                    if (ok) stats_raw_socp.push(ms, eps_star);
+                }
+
+                // --- LP-type: Seidel + Clarkson with dual and primal basis solvers ---
 
                 {
                     SeidelOptions so;
@@ -160,8 +204,27 @@ int main(int argc, char** argv) {
                     double ms = time_ms([&]() {
                         out = seidel_incremental(O, S, so);
                     });
-                    (void)out; // could check out.basis.eps_star vs eps_star if desired
-                    stats_lp_seidel.push(ms);
+                    stats_lp_seidel.push(ms, full_radius_for_basis(O, out.basis.idx, Es));
+                }
+
+                {
+                    SeidelOptions so;
+                    so.seed = 42;
+                    so.max_depth = -1;
+
+                    SeidelResult out;
+                    bool ok = true;
+                    double ms = time_ms([&]() {
+                        try {
+                            out = seidel_incremental(O_socp, S, so);
+                        } catch (const std::exception& e) {
+                            ok = false;
+                            std::cerr << "LP-Seidel-SOCP failed: " << e.what() << "\n";
+                        }
+                    });
+                    if (ok) {
+                        stats_lp_seidel_socp.push(ms, full_radius_for_basis(O_socp, out.basis.idx, Es));
+                    }
                 }
 
                 {
@@ -170,35 +233,60 @@ int main(int argc, char** argv) {
                     co.seed = 123;
 
                     ClarksonResult out;
+                    bool ok = true;
                     double ms = time_ms([&]() {
                         
                         try{
                             out = clarkson_iterative(O, S, co);
                         } catch(nlopt::roundoff_limited &e)
                         {
+                            ok = false;
                             std::cerr << "Optimization stopped due to roundoff limits." << std::endl;
                         }
                     });
-                    (void)out;
-                    stats_lp_clarkson.push(ms);
+                    if (ok) stats_lp_clarkson.push(ms, full_radius_for_basis(O, out.basis.idx, Es));
+                }
+
+                {
+                    ClarksonOptions co;
+                    co.rounds = 25;
+                    co.seed = 123;
+
+                    ClarksonResult out;
+                    bool ok = true;
+                    double ms = time_ms([&]() {
+                        try {
+                            out = clarkson_iterative(O_socp, S, co);
+                        } catch (const std::exception& e) {
+                            ok = false;
+                            std::cerr << "LP-Clarkson-SOCP failed: " << e.what() << "\n";
+                        }
+                    });
+                    if (ok) {
+                        stats_lp_clarkson_socp.push(ms, full_radius_for_basis(O_socp, out.basis.idx, Es));
+                    }
                 }
             }
 
             // Write one row per method for this (n,d)
-            auto write_row = [&](const std::string& method, const RunningStats& st) {
+            auto write_row = [&](const std::string& method, const MethodStats& st) {
                 ofs << d << ","
                     << n << ","
                     << method << ","
-                    << st.mean << ","
-                    << st.stddev() << ","
-                    << st.count() << "\n";
+                    << st.time_ms.mean << ","
+                    << st.time_ms.stddev() << ","
+                    << st.radius.mean << ","
+                    << st.time_ms.count() << "\n";
             };
 
             write_row("Raw-SLSQP",    stats_raw_slsqp);
             write_row("Raw-PGD",      stats_raw_pgd);
             write_row("Raw-Cauchy",   stats_raw_cauchy);
+            write_row("Raw-SOCP",     stats_raw_socp);
             write_row("LP-Seidel",    stats_lp_seidel);
             write_row("LP-Clarkson",  stats_lp_clarkson);
+            write_row("LP-Seidel-SOCP",   stats_lp_seidel_socp);
+            write_row("LP-Clarkson-SOCP", stats_lp_clarkson_socp);
         }
     }
 

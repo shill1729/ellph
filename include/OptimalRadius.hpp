@@ -1,8 +1,8 @@
 #pragma once
-#include "KObjective.hpp"
-#include "PGD.hpp"
-#include "SLSQP.hpp"
-#include "CauchySimplex.hpp"
+#include "solvers/KObjective.hpp"
+#include "solvers/PGD.hpp"
+#include "solvers/SLSQP.hpp"
+#include "solvers/CauchySimplex.hpp"
 
 
 struct EpsStar {

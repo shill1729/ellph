@@ -3,9 +3,11 @@
 #include "Ellipsoid.hpp"
 #include "KFromEllipsoids.hpp"
 #include "OptimalRadius.hpp"
+#include "SOCP.hpp"
 #include <vector>
 #include <optional>
 #include <random>
+#include <unordered_map>
 
 struct LPBasis {
     std::vector<int> idx;      // indices into the global array S = {0..n-1}
@@ -24,9 +26,25 @@ struct CacheVal {
     Eigen::VectorXd m;
 };
 
+enum class BasisSolverKind {
+    DualPGD,
+    DualCauchy,
+    DualSLSQP,
+    PrimalSOCP
+};
+
 struct LPParams {
-    SolverKind inner = SolverKind::SLSQP; // your 3 options
-    double tight_tol = 1e-5;              // d_j within tol of eps* => tight
+    BasisSolverKind inner = BasisSolverKind::DualSLSQP;
+    double tight_tol = 1e-5; // d_j within tol of eps* => tight
+
+    LPParams() = default;
+    LPParams(BasisSolverKind inner_solver, double tol)
+        : inner(inner_solver), tight_tol(tol) {}
+    LPParams(SolverKind dual_solver, double tol)
+        : inner(dual_solver == SolverKind::PGD ? BasisSolverKind::DualPGD
+              : dual_solver == SolverKind::Cauchy ? BasisSolverKind::DualCauchy
+                                                  : BasisSolverKind::DualSLSQP),
+          tight_tol(tol) {}
 };
 
 class EllipsoidLPOracle {
