@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-Render ellipsoidal intersection benchmark results into paper-ready plots and LaTeX tables.
+Render ellipsoidal intersection benchmark results into plots and LaTeX tables.
 
 Expected CSV schema (from C++ benchmark):
-    d,n,method,mean_ms,std_ms,num_trials
+    d,n,method,mean_ms,std_ms,mean_radius,num_trials
 """
 
 import pandas as pd
@@ -23,8 +23,11 @@ METHOD_ORDER = [
     "Raw-SLSQP",
     "Raw-PGD",
     "Raw-Cauchy",
+    "Raw-SOCP",
     "LP-Seidel",
     "LP-Clarkson",
+    "LP-Seidel-SOCP",
+    "LP-Clarkson-SOCP",
 ]
 
 # Output directories
@@ -42,6 +45,8 @@ def load_results(csv_path: Path = CSV_PATH) -> pd.DataFrame:
     df["d"] = df["d"].astype(int)
     df["n"] = df["n"].astype(int)
     df["method"] = df["method"].astype(str)
+    if "mean_radius" not in df.columns:
+        df["mean_radius"] = np.nan
     return df
 
 
@@ -57,7 +62,7 @@ def ensure_dirs():
 def plot_runtime_vs_n(df: pd.DataFrame, fixed_d: int, use_logy: bool = True):
     """
     For a fixed dimension d, plot mean runtime vs n for all methods.
-    Saves a single PDF figure.
+    Saves a single PNG figure.
     """
     subset = df[df["d"] == fixed_d].copy()
     if subset.empty:
@@ -89,7 +94,7 @@ def plot_runtime_vs_n(df: pd.DataFrame, fixed_d: int, use_logy: bool = True):
     plt.grid(True, which="both", linestyle="--", alpha=0.3)
     plt.legend()
 
-    out_path = FIG_DIR / f"runtime_vs_n_d{fixed_d}.pdf"
+    out_path = FIG_DIR / f"runtime_vs_n_d{fixed_d}.png"
     plt.tight_layout()
     plt.savefig(out_path)
     plt.close()
@@ -99,7 +104,7 @@ def plot_runtime_vs_n(df: pd.DataFrame, fixed_d: int, use_logy: bool = True):
 def plot_runtime_vs_d(df: pd.DataFrame, fixed_n: int, use_logy: bool = True):
     """
     For a fixed n, plot mean runtime vs d for all methods.
-    Saves a single PDF figure.
+    Saves a single PNG figure.
     """
     subset = df[df["n"] == fixed_n].copy()
     if subset.empty:
@@ -129,7 +134,7 @@ def plot_runtime_vs_d(df: pd.DataFrame, fixed_n: int, use_logy: bool = True):
     plt.grid(True, which="both", linestyle="--", alpha=0.3)
     plt.legend()
 
-    out_path = FIG_DIR / f"runtime_vs_d_n{fixed_n}.pdf"
+    out_path = FIG_DIR / f"runtime_vs_d_n{fixed_n}.png"
     plt.tight_layout()
     plt.savefig(out_path)
     plt.close()
@@ -177,7 +182,79 @@ def plot_heatmap_for_method(df: pd.DataFrame, method: str):
     plt.xticks(pivot.columns)
     plt.yticks(pivot.index)
 
-    out_path = FIG_DIR / f"heatmap_{method}.pdf"
+    out_path = FIG_DIR / f"heatmap_{method}.png"
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close()
+    print(f"[INFO] Saved {out_path}")
+
+
+def plot_radius_vs_n(df: pd.DataFrame, fixed_d: int):
+    """
+    For a fixed dimension d, plot mean optimal radius vs n for all methods.
+    Saves a single PNG figure.
+    """
+    subset = df[df["d"] == fixed_d].copy()
+    if subset.empty or subset["mean_radius"].isna().all():
+        print(f"[WARN] No radius data for d={fixed_d}, skipping radius_vs_n plot.")
+        return
+
+    subset = subset.sort_values(["n", "method"])
+    methods = [m for m in METHOD_ORDER if m in subset["method"].unique()]
+
+    plt.figure()
+    for m in methods:
+        sub_m = subset[subset["method"] == m].sort_values("n")
+        plt.plot(
+            sub_m["n"],
+            sub_m["mean_radius"],
+            marker="o",
+            label=m,
+        )
+
+    plt.xlabel(r"$n$ (number of ellipsoids)")
+    plt.ylabel("Mean optimal radius")
+    plt.title(fr"Mean optimal radius vs $n$ at fixed $d={fixed_d}$")
+    plt.grid(True, which="both", linestyle="--", alpha=0.3)
+    plt.legend()
+
+    out_path = FIG_DIR / f"radius_vs_n_d{fixed_d}.png"
+    plt.tight_layout()
+    plt.savefig(out_path)
+    plt.close()
+    print(f"[INFO] Saved {out_path}")
+
+
+def plot_radius_vs_d(df: pd.DataFrame, fixed_n: int):
+    """
+    For a fixed n, plot mean optimal radius vs d for all methods.
+    Saves a single PNG figure.
+    """
+    subset = df[df["n"] == fixed_n].copy()
+    if subset.empty or subset["mean_radius"].isna().all():
+        print(f"[WARN] No radius data for n={fixed_n}, skipping radius_vs_d plot.")
+        return
+
+    subset = subset.sort_values(["d", "method"])
+    methods = [m for m in METHOD_ORDER if m in subset["method"].unique()]
+
+    plt.figure()
+    for m in methods:
+        sub_m = subset[subset["method"] == m].sort_values("d")
+        plt.plot(
+            sub_m["d"],
+            sub_m["mean_radius"],
+            marker="o",
+            label=m,
+        )
+
+    plt.xlabel(r"$d$ (dimension)")
+    plt.ylabel("Mean optimal radius")
+    plt.title(fr"Mean optimal radius vs $d$ at fixed $n={fixed_n}$")
+    plt.grid(True, which="both", linestyle="--", alpha=0.3)
+    plt.legend()
+
+    out_path = FIG_DIR / f"radius_vs_d_n{fixed_n}.png"
     plt.tight_layout()
     plt.savefig(out_path)
     plt.close()
@@ -295,6 +372,88 @@ def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3):
     print(f"[INFO] Saved {out_path}")
 
 
+def latex_radius_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 4):
+    """
+    For a fixed d, produce a LaTeX table:
+    rows = methods, columns = n, entries = mean optimal radius.
+    """
+    sub = df[df["d"] == fixed_d].copy()
+    if sub.empty or sub["mean_radius"].isna().all():
+        print(f"[WARN] No radius data for d={fixed_d}, skipping radius table.")
+        return
+
+    sub = sub.sort_values(["method", "n"])
+    methods = [m for m in METHOD_ORDER if m in sub["method"].unique()]
+    ns = sorted(sub["n"].unique())
+    fmt = f"{{:.{precision}g}}"
+
+    table_data = {}
+    for m in methods:
+        row = []
+        for n in ns:
+            entry = sub[(sub["method"] == m) & (sub["n"] == n)]
+            row.append("-" if entry.empty else fmt.format(entry["mean_radius"].iloc[0]))
+        table_data[m] = row
+
+    table_df = pd.DataFrame(table_data, index=[str(n) for n in ns]).T
+    table_df.index.name = "Method"
+    table_df.columns = [fr"$n={n}$" for n in ns]
+
+    latex_str = table_df.to_latex(
+        escape=False,
+        caption=fr"Mean optimal radius for fixed $d={fixed_d}$.",
+        label=fr"tab:radius_d{fixed_d}",
+        column_format="l" + "c" * len(ns),
+    )
+
+    out_path = TABLE_DIR / f"radius_fixed_d{fixed_d}.tex"
+    with open(out_path, "w") as f:
+        f.write(latex_str)
+
+    print(f"[INFO] Saved {out_path}")
+
+
+def latex_radius_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 4):
+    """
+    For a fixed n, produce a LaTeX table:
+    rows = methods, columns = d, entries = mean optimal radius.
+    """
+    sub = df[df["n"] == fixed_n].copy()
+    if sub.empty or sub["mean_radius"].isna().all():
+        print(f"[WARN] No radius data for n={fixed_n}, skipping radius table.")
+        return
+
+    sub = sub.sort_values(["method", "d"])
+    methods = [m for m in METHOD_ORDER if m in sub["method"].unique()]
+    ds = sorted(sub["d"].unique())
+    fmt = f"{{:.{precision}g}}"
+
+    table_data = {}
+    for m in methods:
+        row = []
+        for d in ds:
+            entry = sub[(sub["method"] == m) & (sub["d"] == d)]
+            row.append("-" if entry.empty else fmt.format(entry["mean_radius"].iloc[0]))
+        table_data[m] = row
+
+    table_df = pd.DataFrame(table_data, index=[str(d) for d in ds]).T
+    table_df.index.name = "Method"
+    table_df.columns = [fr"$d={d}$" for d in ds]
+
+    latex_str = table_df.to_latex(
+        escape=False,
+        caption=fr"Mean optimal radius for fixed $n={fixed_n}$.",
+        label=fr"tab:radius_n{fixed_n}",
+        column_format="l" + "c" * len(ds),
+    )
+
+    out_path = TABLE_DIR / f"radius_fixed_n{fixed_n}.tex"
+    with open(out_path, "w") as f:
+        f.write(latex_str)
+
+    print(f"[INFO] Saved {out_path}")
+
+
 # ----------------------------------------------------------------------
 # Main driver
 # ----------------------------------------------------------------------
@@ -308,6 +467,7 @@ def main():
     grouped = df.groupby(["d", "n", "method"], as_index=False).agg(
         mean_ms=("mean_ms", "mean"),
         std_ms=("std_ms", "mean"),
+        mean_radius=("mean_radius", "mean"),
         num_trials=("num_trials", "mean"),  # should already be constant
     )
     # If df is already aggregated (one row per (d,n,method)), grouped == df
@@ -319,10 +479,12 @@ def main():
     # Plots: runtime vs n for each fixed d
     for d in FIXED_D_FOR_N_SWEEPS:
         plot_runtime_vs_n(df_ag, fixed_d=d, use_logy=True)
+        plot_radius_vs_n(df_ag, fixed_d=d)
 
     # Plots: runtime vs d for each fixed n
     for n in FIXED_N_FOR_D_SWEEPS:
         plot_runtime_vs_d(df_ag, fixed_n=n, use_logy=True)
+        plot_radius_vs_d(df_ag, fixed_n=n)
 
     # Heatmaps per method
     for m in METHOD_ORDER:
@@ -331,10 +493,12 @@ def main():
     # LaTeX tables for fixed d
     for d in FIXED_D_FOR_N_SWEEPS:
         latex_table_fixed_d(df_ag, fixed_d=d, precision=3)
+        latex_radius_table_fixed_d(df_ag, fixed_d=d, precision=4)
 
     # LaTeX tables for fixed n
     for n in FIXED_N_FOR_D_SWEEPS:
         latex_table_fixed_n(df_ag, fixed_n=n, precision=3)
+        latex_radius_table_fixed_n(df_ag, fixed_n=n, precision=4)
 
 
 if __name__ == "__main__":

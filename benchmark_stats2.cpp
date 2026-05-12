@@ -89,8 +89,8 @@ int main(int argc, char** argv) {
     }
 
     // Grid in (n,d)
-    const int d_values[] = {2, 3};
-    const int n_values[] = {2, 3, 4};
+    const int d_values[] = {2, 3, 4, 5, 6};
+    const int n_values[] = {2, 3, 4, 5, 6};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
