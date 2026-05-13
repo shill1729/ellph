@@ -24,6 +24,7 @@ struct LPEval {
 struct CacheVal {
     double eps_star;
     Eigen::VectorXd m;
+    Eigen::VectorXd lambda;    // aligned with sorted cache key order when available
 };
 
 enum class BasisSolverKind {
@@ -36,6 +37,7 @@ enum class BasisSolverKind {
 struct LPParams {
     BasisSolverKind inner = BasisSolverKind::DualSLSQP;
     double tight_tol = 1e-5; // d_j within tol of eps* => tight
+    double support_tol = 1e-8; // λ_j above tol => support/basis candidate
 
     LPParams() = default;
     LPParams(BasisSolverKind inner_solver, double tol)

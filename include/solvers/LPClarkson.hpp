@@ -3,6 +3,7 @@
 
 struct ClarksonOptions {
     int rounds = 20;          // outer rounds
+    int max_inner = 20;       // inner refinement rounds when violators have small weight
     int sample_size = -1;     // if <0, default to 4*(d+1)*(d+1)
     double weight_bad_threshold = 0.5; // if violators carry >50% sampled weight, double
     uint64_t seed = 123;

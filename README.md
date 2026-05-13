@@ -39,12 +39,12 @@ From the repository root, configure and build:
     mkdir -p build
     cmake -S . -B build -DCMAKE_BUILD_TYPE=Release
     cmake --build build --config Release
-    ./build/output/benchmark_stats2
+    ./build/output/main
 
 This produces and runs the executable and you can pass different a number of trials:
 
-    build/output/benchmark_stats2 50
-    build/output/benchmark_stats2 100
+    build/output/main 50
+    build/output/main 100
 
 ## Create plots and tables
 Now create a virtual environment
@@ -88,11 +88,11 @@ with
 
 and
 
-    ./build/output/benchmark_stats2
+    ./build/output/main
 
 with
 
-    .\build\output\Release\benchmark_stats2.exe
+    .\build\output\Release\main.exe
 
 For the python script do this to start instead:
 

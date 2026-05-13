@@ -2,33 +2,41 @@
 #include <random>
 #include <algorithm>
 
-
-static SeidelResult seidel_inner(const EllipsoidLPOracle& O,
-                                 const std::vector<int>& perm,
-                                 int upto,
-                                 LPBasis B,
-                                 int depth,
-                                 int& vt_count)
+// Matches Python reference:
+//   recurse(prefix_end, R):
+//     if |R| > D or prefix_end == 0:
+//         return compute_basis(perm[0:prefix_end] + R)
+//     res = recurse(prefix_end - 1, R)
+//     j = perm[prefix_end - 1]
+//     if violates(res, j): return recurse(prefix_end - 1, R + [j])
+//     return res
+static void seidel_inner(const EllipsoidLPOracle& O,
+                         const std::vector<int>& perm,
+                         int prefix_end,
+                         const std::vector<int>& R,
+                         int D,
+                         LPBasis& out,
+                         int& vt_count)
 {
-    if (upto < 0 || depth <= 0) return {B, vt_count};
+    if ((int)R.size() > D || prefix_end <= 0) {
+        std::vector<int> subset(perm.begin(), perm.begin() + prefix_end);
+        subset.insert(subset.end(), R.begin(), R.end());
+        std::sort(subset.begin(), subset.end());
+        subset.erase(std::unique(subset.begin(), subset.end()), subset.end());
+        out = subset.empty() ? LPBasis{{}, 0.0} : O.compute_basis(subset);
+        return;
+    }
 
-    // Recurse on prefix
-    SeidelResult r = seidel_inner(O, perm, upto-1, B, depth, vt_count);
+    seidel_inner(O, perm, prefix_end - 1, R, D, out, vt_count);
 
-    // Evaluate **once** on the current basis
-    LPEval evB = O.evaluate(r.basis.idx);
-
-    // Check violator with cached evB
-    int x = perm[upto];
+    int j = perm[prefix_end - 1];
+    LPEval evB = O.evaluate(out.idx);
     ++vt_count;
-    if (!O.is_violator(r.basis, x, evB)) return r;
+    if (!O.is_violator(out, j, evB)) return;
 
-    // Violation: grow basis and recompute
-    std::vector<int> C = r.basis.idx; C.push_back(x);
-    LPBasis Bnew = O.compute_basis(C);
-
-    // Tail recurse with the **new** basis
-    return seidel_inner(O, perm, upto-1, Bnew, depth-1, vt_count);
+    std::vector<int> R2 = R;
+    R2.push_back(j);
+    seidel_inner(O, perm, prefix_end - 1, R2, D, out, vt_count);
 }
 
 
@@ -41,9 +49,8 @@ SeidelResult seidel_incremental(const EllipsoidLPOracle& O,
     std::shuffle(perm.begin(), perm.end(), rng);
 
     int vt = 0;
-    LPBasis B0{{}, 0.0};
-    const int depth0 = (opt.max_depth < 0 ? O.d() + 1 : opt.max_depth);
-    auto out = seidel_inner(O, perm, (int)perm.size()-1, B0, depth0, vt);
-    out.violation_tests = vt;
-    return out;
+    const int D = (opt.max_depth < 0 ? O.d() + 1 : opt.max_depth);
+    LPBasis B{{}, 0.0};
+    seidel_inner(O, perm, (int)perm.size(), {}, D, B, vt);
+    return {B, vt};
 }

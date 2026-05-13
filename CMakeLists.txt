@@ -64,16 +64,16 @@ file(GLOB ELLPH_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/solvers/*.cpp"
 )
 
-add_executable(benchmark_stats2
+add_executable(main
     ${ELLPH_SOURCES}
-    benchmark_stats2.cpp
+    main.cpp
 )
 
 
 
 if(APPLE)
     # Include directories
-    target_include_directories(benchmark_stats2 PRIVATE
+    target_include_directories(main PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/geometry"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/solvers"
@@ -84,19 +84,19 @@ if(APPLE)
     )
 
     # Library search paths
-    target_link_directories(benchmark_stats2 PRIVATE
+    target_link_directories(main PRIVATE
         "/opt/homebrew/opt/boost/lib"
         "/opt/homebrew/opt/nlopt/lib"
     )
 
     # Link against NLopt (Boost is header-only for what you are doing)
-    target_link_libraries(benchmark_stats2 PRIVATE
+    target_link_libraries(main PRIVATE
         nlopt
         alglib
     )
 else()
     # Include directories
-    target_include_directories(benchmark_stats2 PRIVATE
+    target_include_directories(main PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/include"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/geometry"
         "${CMAKE_CURRENT_SOURCE_DIR}/include/solvers"
@@ -105,22 +105,22 @@ else()
     # Find and link NLopt
     find_package(nlopt CONFIG REQUIRED)
     if(TARGET nlopt::nlopt)
-        target_link_libraries(benchmark_stats2 PRIVATE nlopt::nlopt alglib)
+        target_link_libraries(main PRIVATE nlopt::nlopt alglib)
     elseif(TARGET NLopt::nlopt)
-        target_link_libraries(benchmark_stats2 PRIVATE NLopt::nlopt alglib)
+        target_link_libraries(main PRIVATE NLopt::nlopt alglib)
     else()
         message(FATAL_ERROR "nlopt found but no imported target")
     endif()
     # Find Eigen3
     find_package(Eigen3 CONFIG REQUIRED)
-    target_link_libraries(benchmark_stats2 PRIVATE Eigen3::Eigen)
+    target_link_libraries(main PRIVATE Eigen3::Eigen)
     
     # Boost (header-only)
     find_package(Boost CONFIG REQUIRED)
-    target_include_directories(benchmark_stats2 PRIVATE ${Boost_INCLUDE_DIRS})
+    target_include_directories(main PRIVATE ${Boost_INCLUDE_DIRS})
 endif()
 
-# Put the binary in build/output/benchmark_stats2
-set_target_properties(benchmark_stats2 PROPERTIES
+# Put the binary in build/output/main
+set_target_properties(main PROPERTIES
     RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/output"
 )

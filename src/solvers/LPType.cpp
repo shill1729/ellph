@@ -65,34 +65,43 @@ LPEval EllipsoidLPOracle::evaluate(const std::vector<int>& B) const {
     CacheVal cv;
     auto it = cache_.find(key);
     if (it == cache_.end()) {
-        // Solve on a canonical order (sorted), but cache only (eps, m)
         std::vector<int> Bsorted = B;
         std::sort(Bsorted.begin(), Bsorted.end());
         if (P_.inner == BasisSolverKind::PrimalSOCP) {
             auto Es = ellipsoid_subset(all_, Bsorted);
             auto res = solve_socp_alglib(Es);
-            cv = CacheVal{res.eps_star, res.m};
+            cv = CacheVal{res.eps_star, res.m, Eigen::VectorXd()};
         } else {
             auto K = make_K_for_subset(Bsorted);
             auto res = optimal_radius(K, dual_solver_kind(P_.inner));
-            cv = CacheVal{res.eps_star, K.centroid()};
+            cv = CacheVal{res.eps_star, K.centroid(), res.lambda_star};
         }
         cache_.emplace(key, cv);
     } else {
         cv = it->second;
     }
 
-    // Recompute per-constraint distances in the **caller’s order**
-    Eigen::VectorXd d(B.size());
-    for (int t = 0; t < (int)B.size(); ++t) {
-        const Ellipsoid& Ei = all_[ B[t] ];
+    const int sz = (int)B.size();
+    Eigen::VectorXd d(sz);
+    for (int t = 0; t < sz; ++t) {
+        const Ellipsoid& Ei = all_[B[t]];
         const Eigen::VectorXd diff = cv.m - Ei.center();
-        const double d2 = diff.transpose() * (Ei.precision() * diff);
-        d[t] = std::sqrt(d2);  // distances (not squared), to match your convention
+        d[t] = std::sqrt(diff.transpose() * (Ei.precision() * diff));
     }
 
-    // λ* not needed by Seidel; leave empty unless you really need it
-    return LPEval{cv.eps_star, cv.m, d, Eigen::VectorXd()};
+    // Align lambda to caller’s order (cv.lambda is aligned to sorted order)
+    Eigen::VectorXd lam_caller;
+    if (cv.lambda.size() == sz) {
+        std::vector<int> Bsorted = B;
+        std::sort(Bsorted.begin(), Bsorted.end());
+        lam_caller.resize(sz);
+        for (int t = 0; t < sz; ++t) {
+            auto pos = std::lower_bound(Bsorted.begin(), Bsorted.end(), B[t]) - Bsorted.begin();
+            lam_caller[t] = cv.lambda[(int)pos];
+        }
+    }
+
+    return LPEval{cv.eps_star, cv.m, d, lam_caller};
 }
 
 bool EllipsoidLPOracle::is_violator(const LPBasis& B, int i, const LPEval& evB) const {
@@ -139,27 +148,36 @@ std::vector<int> EllipsoidLPOracle::shrink_tight(const std::vector<int>& tight,
 LPBasis EllipsoidLPOracle::compute_basis(const std::vector<int>& C) const {
     if (C.empty()) return LPBasis{{}, 0.0};
 
-    // Solve on C
     LPEval ev = evaluate(C);
-    // Tight set T := { j in C : |d_j - eps*| <= tol }
-    std::vector<int> T;
-    for (int t = 0; t < (int)C.size(); ++t) {
-        // if (std::abs(std::sqrt(ev.dists[t]) - ev.eps_star) <= P_.tight_tol) T.push_back(C[t]);
-        if (std::abs(ev.dists[t] - ev.eps_star) <= P_.tight_tol) T.push_back(C[t]);
-    }
-    
-    if (T.empty()) {
-        int argmax = 0; double best = -1.0;
+    std::vector<int> Bidx;
+
+    if (ev.lambda.size() == (int)C.size()) {
+        // Prefer lambda-support basis (matches Python reference)
         for (int t = 0; t < (int)C.size(); ++t) {
-            double val = ev.dists[t];
-            if (val > best) { best = val; argmax = t; }
+            if (ev.lambda[t] > P_.support_tol) Bidx.push_back(C[t]);
         }
-        T.push_back(C[argmax]);
+        if ((int)Bidx.size() > d_ + 1) {
+            Bidx = shrink_tight(Bidx, C, ev);
+        }
     }
 
+    if (Bidx.empty()) {
+        // Fall back: tight-distance approach (used for SOCP or empty support)
+        std::vector<int> T;
+        for (int t = 0; t < (int)C.size(); ++t) {
+            if (std::abs(ev.dists[t] - ev.eps_star) <= P_.tight_tol) T.push_back(C[t]);
+        }
+        if (T.empty()) {
+            int argmax = 0; double best = -1.0;
+            for (int t = 0; t < (int)C.size(); ++t) {
+                if (ev.dists[t] > best) { best = ev.dists[t]; argmax = t; }
+            }
+            T.push_back(C[argmax]);
+        }
+        Bidx = shrink_tight(T, C, ev);
+    }
 
-    auto Bidx = shrink_tight(T, C, ev);
-    // Recompute eps* on the basis itself (cheap, usually unchanged)
+    std::sort(Bidx.begin(), Bidx.end());
     LPEval evB = evaluate(Bidx);
     return LPBasis{Bidx, evB.eps_star};
 }

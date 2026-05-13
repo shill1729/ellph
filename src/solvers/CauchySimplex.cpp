@@ -57,6 +57,7 @@ CSResult minimize_cauchy_simplex(KObjective& obj,
     if (sumw <= 0) w.setConstant(1.0 / double(w.size()));
     else w.array() /= sumw;
     for (int i = 0; i < w.size(); ++i) if (w[i] < opt.eps_clip) w[i] = std::max(w[i], 1e-6);
+    w.array() /= w.sum();  // renorm after interior push (sum may exceed 1 if many weights bumped)
 
     Vec g; g.resize(w.size());
     double f = obj.value_grad(w, g);
@@ -66,16 +67,17 @@ CSResult minimize_cauchy_simplex(KObjective& obj,
         centered_grad(w, g, c);            // c = g - (w·g)1
         d = w.array() * c.array();         // d_i = w_i * c_i
 
-        // Check first-order stationarity: projected grad Π_w g -> small
-        const double pg_norm = (c.array().square() * w.array()).sqrt().matrix().norm(); // ||W^(1/2) c||
-        if (pg_norm < opt.tol * std::max(1.0, g.norm())) {
+        // Check first-order stationarity: absolute tolerance avoids premature exit when
+        // g.norm() is large (scaling by g.norm() causes early stopping for large distances)
+        const double pg_norm = (c.array().square() * w.array()).sqrt().matrix().norm();
+        if (pg_norm < opt.tol) {
             return {w, f, it, true};
         }
 
         // Step-size cap
         double eta_cap = eta_max_cap(w, c);
         if (!std::isfinite(eta_cap)) {
-            // All c_i <= 0 ⇒ already optimal
+            // All active c_i <= 0 — KKT condition holds on current support; converged
             return {w, f, it, true};
         }
         eta_cap = std::max(0.0, eta_cap - opt.eta_shrink);
