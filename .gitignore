@@ -1,13 +1,7 @@
-/LPbenchmark.cpp
-/benchmark.cpp
-/benchmark_results.csv
-/benchmark_stats.cpp
-/compute_stats.cpp
+
 /figs
-/main.cpp
 /output
 /tables
-/test_generator.cpp
 
 # CMake build trees and generator outputs
 /build/
