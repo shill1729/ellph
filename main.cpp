@@ -90,8 +90,8 @@ int main(int argc, char** argv) {
 
     // Grid in (n,d)
     // TODO: make these passable?
-    const int d_values[] = {2, 3, 4, 5, 10, 20, 50, 100, 200};
-    const int n_values[] = {2, 3, 4, 5, 6, 10, 15, 20, 30, 50, 100, 200};
+    const int d_values[] = {2, 3, 4, 5};
+    const int n_values[] = {2, 3, 4, 5, 10, 15, 20};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
@@ -154,11 +154,18 @@ int main(int argc, char** argv) {
 
                 {
                     double eps_star = 0.0;
+                    bool ok = true;
                     double ms = time_ms([&]() {
-                        auto res = optimal_radius(K, SolverKind::SLSQP);
-                        eps_star = res.eps_star;
+                        try {
+                            auto res = optimal_radius(K, SolverKind::SLSQP);
+                            eps_star = res.eps_star;
+                        } catch (const nlopt::roundoff_limited&) {
+                            ok = false;
+                            std::cerr << "[d=" << d << " n=" << n << " trial=" << trial
+                                      << " Raw-SLSQP] roundoff_limited\n";
+                        }
                     });
-                    stats_raw_slsqp.push(ms, eps_star);
+                    if (ok) stats_raw_slsqp.push(ms, eps_star);
                 }
 
                 {
@@ -198,14 +205,21 @@ int main(int argc, char** argv) {
 
                 {
                     SeidelOptions so;
-                    so.seed = 42;      // can also vary with trial if desired
-                    so.max_depth = -1; // unlimited depth
+                    so.seed = 42;
+                    so.max_depth = -1;
 
                     SeidelResult out;
+                    bool ok = true;
                     double ms = time_ms([&]() {
-                        out = seidel_incremental(O, S, so);
+                        try {
+                            out = seidel_incremental(O, S, so);
+                        } catch (const nlopt::roundoff_limited&) {
+                            ok = false;
+                            std::cerr << "[d=" << d << " n=" << n << " trial=" << trial
+                                      << " LP-Seidel] roundoff_limited\n";
+                        }
                     });
-                    stats_lp_seidel.push(ms, full_radius_for_basis(O, out.basis.idx, Es));
+                    if (ok) stats_lp_seidel.push(ms, full_radius_for_basis(O, out.basis.idx, Es));
                 }
 
                 {
@@ -237,12 +251,12 @@ int main(int argc, char** argv) {
                     bool ok = true;
                     double ms = time_ms([&]() {
                         
-                        try{
+                        try {
                             out = clarkson_iterative(O, S, co);
-                        } catch(nlopt::roundoff_limited &e)
-                        {
+                        } catch (const nlopt::roundoff_limited&) {
                             ok = false;
-                            std::cerr << "Optimization stopped due to roundoff limits." << std::endl;
+                            std::cerr << "[d=" << d << " n=" << n << " trial=" << trial
+                                      << " LP-Clarkson] roundoff_limited\n";
                         }
                     });
                     if (ok) stats_lp_clarkson.push(ms, full_radius_for_basis(O, out.basis.idx, Es));

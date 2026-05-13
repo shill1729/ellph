@@ -16,7 +16,7 @@ EpsStar optimal_radius(KObjective& obj, SolverKind solver) {
             lam_star = res.lambda; fval = res.fval; break;
         }
         case SolverKind::Cauchy: {
-            CSOptions o; o.max_iters=20000; o.tol=1e-10;
+            CSOptions o; o.max_iters=30000; o.tol=1e-10;
             auto res = minimize_cauchy_simplex(obj, lam0, o);
             lam_star = res.lambda; fval = res.fval; break;
         }

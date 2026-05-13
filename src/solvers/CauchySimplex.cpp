@@ -1,118 +1,211 @@
-#include "CauchySimplex.hpp"
-#include <algorithm>
-#include <numeric>
+// ========================= src/solvers/CauchySimplex.cpp =========================
+#include "solvers/CauchySimplex.hpp"
 
-static inline double dot(const Eigen::VectorXd& a, const Eigen::VectorXd& b) {
+#include <algorithm>
+#include <cmath>
+#include <limits>
+
+using Vec = Eigen::VectorXd;
+
+static inline double dot(const Vec& a, const Vec& b)
+{
     return a.dot(b);
 }
 
-// Compute centered gradient c = g - (w·g) * 1
-static inline void centered_grad(const Eigen::VectorXd& w,
-                                 const Eigen::VectorXd& g,
-                                 Eigen::VectorXd& c)
+static inline void normalize_or_uniform(Vec& w)
 {
-    const double wg = dot(w, g);
-    c = g.array() - wg;
+    const double s = w.sum();
+
+    if (s <= 0.0 || !std::isfinite(s)) {
+        w.setConstant(1.0 / static_cast<double>(w.size()));
+        return;
+    }
+
+    w.array() /= s;
 }
 
-// eta_max = 1 / max_{i in active} c_i, with active = {i: w_i > 0}
-static inline double eta_max_cap(const Eigen::VectorXd& w,
-                                 const Eigen::VectorXd& c)
+static inline void make_simplex_feasible(Vec& w, double eps_zero)
 {
-    double maxci = 0.0;
     for (int i = 0; i < w.size(); ++i) {
-        if (w[i] > 0.0) maxci = std::max(maxci, c[i]);
-    }
-    if (maxci <= 0.0) return std::numeric_limits<double>::infinity();
-    return 1.0 / maxci;
-}
-
-static inline void zero_clip_and_renorm(Eigen::VectorXd& w,
-                                        double eps_clip,
-                                        bool renorm)
-{
-    double s = 0.0;
-    for (int i = 0; i < w.size(); ++i) {
-        if (w[i] < eps_clip) w[i] = 0.0;
-        s += w[i];
-    }
-    if (renorm) {
-        if (s <= 0.0) {
-            // fallback to uniform if all got clipped (pathological)
-            w.setConstant(1.0 / double(w.size()));
-        } else {
-            w.array() /= s;
+        if (!std::isfinite(w[i]) || w[i] < 0.0) {
+            w[i] = 0.0;
         }
     }
+
+    normalize_or_uniform(w);
+
+    // The paper initializes in relint(Delta_n). If the caller supplies boundary data,
+    // push it slightly into the simplex before the iteration begins.
+    for (int i = 0; i < w.size(); ++i) {
+        if (w[i] <= eps_zero) {
+            w[i] = eps_zero;
+        }
+    }
+
+    normalize_or_uniform(w);
+}
+
+// c_i = grad_i f(w) - w · grad f(w)
+static inline void centered_gradient(const Vec& w,
+                                     const Vec& grad,
+                                     Vec& c)
+{
+    const double mean_grad = dot(w, grad);
+    c = grad.array() - mean_grad;
+}
+
+// Algorithm 1:
+// S = { i : w_i > epsilon }
+// eta_max = 1 / max_{i in S} (grad_i f(w) - w · grad f(w))
+static inline double compute_eta_max(const Vec& w,
+                                     const Vec& c,
+                                     double eps_zero)
+{
+    double max_active_c = -std::numeric_limits<double>::infinity();
+
+    for (int i = 0; i < w.size(); ++i) {
+        if (w[i] > eps_zero) {
+            max_active_c = std::max(max_active_c, c[i]);
+        }
+    }
+
+    if (!std::isfinite(max_active_c)) {
+        return 0.0;
+    }
+
+    // If max_i c_i <= 0, the paper remarks that eta_max = infinity.
+    // For a finite implementation, this means the user-chosen eta is not capped here.
+    if (max_active_c <= 0.0) {
+        return std::numeric_limits<double>::infinity();
+    }
+
+    return 1.0 / max_active_c;
+}
+
+// Algorithm 1 update:
+//   S = {i : w_i > eps}
+//   Q = {i : w_i <= eps}
+//   \hat w_i = w_i - eta w_i c_i for i in S
+//   \hat w_j = 0 for j in Q
+//   w_new = \hat w / sum_j \hat w_j
+static inline Vec cauchy_simplex_candidate(const Vec& w,
+                                           const Vec& c,
+                                           double eta,
+                                           double eps_zero)
+{
+    Vec candidate(w.size());
+
+    for (int i = 0; i < w.size(); ++i) {
+        if (w[i] <= eps_zero) {
+            candidate[i] = 0.0;
+        } else {
+            candidate[i] = w[i] - eta * w[i] * c[i];
+
+            // Guard only against roundoff. The eta cap is what enforces positivity.
+            if (candidate[i] < 0.0 && candidate[i] > -100.0 * eps_zero) {
+                candidate[i] = 0.0;
+            }
+        }
+    }
+
+    normalize_or_uniform(candidate);
+    return candidate;
 }
 
 CSResult minimize_cauchy_simplex(KObjective& obj,
-                                 const Eigen::VectorXd& w0,
+                                 const Vec& lambda0,
                                  const CSOptions& opt)
 {
-    using Vec = Eigen::VectorXd;
-    Vec w = w0;
-    // Ensure feasibility: strictly interior start is preferred
-    double sumw = w.sum();
-    if (sumw <= 0) w.setConstant(1.0 / double(w.size()));
-    else w.array() /= sumw;
-    for (int i = 0; i < w.size(); ++i) if (w[i] < opt.eps_clip) w[i] = std::max(w[i], 1e-6);
-    w.array() /= w.sum();  // renorm after interior push (sum may exceed 1 if many weights bumped)
+    Vec w = lambda0;
+    make_simplex_feasible(w, opt.eps_zero);
 
-    Vec g; g.resize(w.size());
-    double f = obj.value_grad(w, g);
+    Vec grad(w.size());
+    double f = obj.value_grad(w, grad);
 
-    Vec c(g.size()), d(g.size());
-    for (int it = 0; it < opt.max_iters; ++it) {
-        centered_grad(w, g, c);            // c = g - (w·g)1
-        d = w.array() * c.array();         // d_i = w_i * c_i
+    Vec c(w.size());
 
-        // Check first-order stationarity: absolute tolerance avoids premature exit when
-        // g.norm() is large (scaling by g.norm() causes early stopping for large distances)
-        const double pg_norm = (c.array().square() * w.array()).sqrt().matrix().norm();
-        if (pg_norm < opt.tol) {
-            return {w, f, it, true};
+    for (int it = 1; it <= opt.max_iters; ++it) {
+        centered_gradient(w, grad, c);
+
+        // Paper direction d_i = w_i (grad_i f - w · grad f).
+        // The actual minimization update is w_new = w - eta d.
+        Vec direction = w.array() * c.array();
+
+        if (direction.lpNorm<Eigen::Infinity>() <= opt.tol) {
+            return {w, f, it - 1, true};
         }
 
-        // Step-size cap
-        double eta_cap = eta_max_cap(w, c);
-        if (!std::isfinite(eta_cap)) {
-            // All active c_i <= 0 — KKT condition holds on current support; converged
-            return {w, f, it, true};
-        }
-        eta_cap = std::max(0.0, eta_cap - opt.eta_shrink);
+        double eta_max = compute_eta_max(w, c, opt.eps_zero);
 
-        // Line search on [0, eta_cap]
-        double eta = eta_cap;
-        Vec w_new;
-        double f_new;
+        if (eta_max <= 0.0) {
+            return {w, f, it - 1, false};
+        }
+
+        double eta = opt.initial_eta;
+
+        if (std::isfinite(eta_max)) {
+            eta = std::min(eta, eta_max);
+
+            // Section 3.2: taking eta = eta_max may incorrectly set an index to zero.
+            eta *= opt.boundary_shrink;
+        }
+
+        if (eta <= 0.0 || !std::isfinite(eta)) {
+            return {w, f, it - 1, false};
+        }
+
+        Vec candidate = w;
+        double candidate_f = f;
+        bool accepted = false;
 
         if (opt.armijo) {
-            double gTd = dot(g, d); // note: descent uses w+ = w - eta d
-            // start at full eta, backtrack
-            while (true) {
-                w_new = w - eta * d;
-                // positivity guaranteed if eta <= eta_cap, but we still clip tiny negatives
-                zero_clip_and_renorm(w_new, opt.eps_clip, opt.renormalize);
-                f_new = obj.value(w_new);
-                if (f_new <= f - opt.armijo_c * eta * gTd || eta <= 1e-16) break;
-                eta *= opt.armijo_beta;
+            // Directional derivative along update w - eta d is -grad · d.
+            const double grad_dot_direction = dot(grad, direction);
+
+            double trial_eta = eta;
+
+            for (int ls = 0; ls < opt.max_line_search_steps; ++ls) {
+                candidate = cauchy_simplex_candidate(
+                    w,
+                    c,
+                    trial_eta,
+                    opt.eps_zero
+                );
+
+                candidate_f = obj.value(candidate);
+
+                // Armijo decrease for minimization:
+                // f(w - eta d) <= f(w) - c eta grad·d.
+                if (candidate_f <= f - opt.armijo_c * trial_eta * grad_dot_direction) {
+                    accepted = true;
+                    eta = trial_eta;
+                    break;
+                }
+
+                trial_eta *= opt.armijo_beta;
+
+                if (trial_eta <= 0.0 || trial_eta < std::numeric_limits<double>::epsilon()) {
+                    break;
+                }
             }
         } else {
-            // No Armijo: just take the capped step
-            w_new = w - eta * d;
-            zero_clip_and_renorm(w_new, opt.eps_clip, opt.renormalize);
-            f_new = obj.value(w_new);
+            candidate = cauchy_simplex_candidate(w, c, eta, opt.eps_zero);
+            candidate_f = obj.value(candidate);
+            accepted = std::isfinite(candidate_f);
         }
 
-        // Convergence check
-        if ((w_new - w).norm() < opt.tol * std::max(1.0, w.norm()) &&
-            std::abs(f_new - f)   < opt.tol * std::max(1.0, std::abs(f))) {
-            return {w_new, f_new, it+1, true};
+        if (!accepted) {
+            return {w, f, it - 1, false};
         }
 
-        w.swap(w_new);
-        f = obj.value_grad(w, g);
+        if ((candidate - w).lpNorm<Eigen::Infinity>() <= opt.tol &&
+            std::abs(candidate_f - f) <= opt.tol * std::max(1.0, std::abs(f))) {
+            return {candidate, candidate_f, it, true};
+        }
+
+        w.swap(candidate);
+        f = obj.value_grad(w, grad);
     }
+
     return {w, f, opt.max_iters, false};
 }
