@@ -89,9 +89,9 @@ int main(int argc, char** argv) {
     }
 
     // Grid in (n,d)
-    // TODO: make these passable?
-    const int d_values[] = {2, 3, 4, 5};
-    const int n_values[] = {2, 3, 4, 5, 10, 15, 20};
+    // TODO: make these passable arguments?
+    const int d_values[] = {2, 3, 4, 5, 10, 20, 50, 100};
+    const int n_values[] = {2, 3, 4, 5, 10, 15, 20, 30, 50, 75, 100};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
@@ -103,12 +103,12 @@ int main(int argc, char** argv) {
     }
 
     // CSV header
-    ofs << "d,n,method,mean_ms,std_ms,mean_radius,num_trials\n";
+    ofs << "d,n,method,mean_ms,std_ms,moe,mean_radius,num_trials\n";
 
     // Sweep over d, n
     for (int d : d_values) {
         for (int n : n_values) {
-
+            std::cout << "Running trial for (n,d) = (" << n << "," << d << ")\n";
             // Running stats for each method at this (n,d)
             MethodStats stats_raw_slsqp;
             MethodStats stats_raw_pgd;
@@ -290,6 +290,7 @@ int main(int argc, char** argv) {
                     << method << ","
                     << st.time_ms.mean << ","
                     << st.time_ms.stddev() << ","
+                    << 1.959964 * st.time_ms.stddev() / std::sqrt(st.time_ms.count()) << ","
                     << st.radius.mean << ","
                     << st.time_ms.count() << "\n";
             };
@@ -302,6 +303,7 @@ int main(int argc, char** argv) {
             write_row("LP-Clarkson",  stats_lp_clarkson);
             write_row("LP-Seidel-SOCP",   stats_lp_seidel_socp);
             write_row("LP-Clarkson-SOCP", stats_lp_clarkson_socp);
+
         }
     }
 
