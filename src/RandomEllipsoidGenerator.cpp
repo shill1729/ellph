@@ -32,8 +32,7 @@ std::vector<Ellipsoid> RandomEllipsoidGenerator::generate() {
     for (int i = 0; i < opts_.n; ++i) {
         Vec c = sample_center();
 
-        // Build SPD as covariance by default; if user wants precision at storage time,
-        // we invert once (dimension is usually moderate; for large d you could switch to lazy).
+        // Build PD as covariance by default; if user wants precision at storage time,
         Mat cov;
         if (opts_.spd_mode == SPDMode::LogUniformSpectrum) {
             cov = spd_from_loguniform_spectrum();
@@ -105,9 +104,6 @@ RandomEllipsoidGenerator::Mat RandomEllipsoidGenerator::spd_from_wishart() {
     const int df = opts_.wishart_df;
     Mat G = Mat::NullaryExpr(d, df, [this](){ std::normal_distribution<double> N(0.0, 1.0); return N(rng_); });
     Mat S = (G * G.transpose()) / static_cast<double>(df);
-
-    // Small regularization for numerical stability (optional; comment if you prefer pure Wishart)
-    // S += 1e-12 * Mat::Identity(d, d);
 
     Eigen::LLT<Mat> llt(S);
     if (llt.info() != Eigen::Success) {

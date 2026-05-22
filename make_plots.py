@@ -484,7 +484,6 @@ def main():
     df = load_results()
 
     # Basic sanity check: aggregate again to ensure we are consistent
-    # (in case one ever switches to trial-level CSV).
     grouped = df.groupby(["d", "n", "method"], as_index=False).agg(
         mean_ms=("mean_ms", "mean"),
         std_ms=("std_ms", "mean"),

@@ -82,7 +82,7 @@ int main(int argc, char** argv) {
     std::cout.precision(9);
 
     // Number of random instances per (n,d) per method.
-    // You can override from the command line: ./prog 100
+    // num trials can be passed from command-line but nothing else yet.
     int num_trials = 50;
     if (argc >= 2) {
         num_trials = std::stoi(argv[1]);
@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
                 opt.spd_mode = RandomEllipsoidGenerator::SPDMode::LogUniformSpectrum;
                 opt.lambda_min = 0.25;
                 opt.lambda_max = 4.0;
-                opt.store_covariance = false; // directly store precision if you prefer
+                opt.store_covariance = false;
                 opt.radius = 1.;
                 opt.seed = static_cast<unsigned long>(
                     base_seed + static_cast<unsigned long long>(trial)
