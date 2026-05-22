@@ -24,8 +24,8 @@ METHOD_ORDER = [
     "Raw-PGD",
     "Raw-Cauchy",
     "Raw-SOCP",
-    "LP-Seidel",
-    "LP-Clarkson",
+    "LP-Seidel-SLSQP",
+    "LP-Clarkson-SLSQP",
     "LP-Seidel-SOCP",
     "LP-Clarkson-SOCP",
 ]
@@ -273,10 +273,11 @@ def format_cell(mean_ms: float, std_ms: float, precision: int = 3) -> str:
     return f"{fmt.format(mean_ms)} ({fmt.format(std_ms)})"
 
 
-def latex_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 3):
+def latex_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 3, what: str = "mean"):
     """
     For a fixed d, produce a LaTeX table:
-    rows = methods, columns = n, entries = mean(std) in ms.
+    rows = methods, columns = n, entries = mean runtime or SD (ms).
+    what: "mean" for mean runtime (best bolded), "sd" for standard deviation.
     """
     sub = df[df["d"] == fixed_d].copy()
     if sub.empty:
@@ -287,7 +288,9 @@ def latex_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 3):
     methods = [m for m in METHOD_ORDER if m in sub["method"].unique()]
     ns = sorted(sub["n"].unique())
 
-    # Build a DataFrame of formatted strings
+    fmt = f"{{:.{precision}g}}"
+    best_mean_per_n = {n: sub[sub["n"] == n]["mean_ms"].min() for n in ns}
+
     table_data = {}
     for m in methods:
         row = []
@@ -298,7 +301,10 @@ def latex_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 3):
             else:
                 mean_ms = entry["mean_ms"].iloc[0]
                 std_ms = entry["std_ms"].iloc[0]
-                cell = format_cell(mean_ms, std_ms, precision=precision)
+                val = mean_ms if what == "mean" else std_ms
+                cell = fmt.format(val)
+                if what == "mean" and mean_ms == best_mean_per_n[n]:
+                    cell = r"\textbf{" + cell + r"}"
             row.append(cell)
         table_data[m] = row
 
@@ -306,8 +312,12 @@ def latex_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 3):
     table_df.index.name = "Method"
     table_df.columns = [fr"$n={n}$" for n in ns]
 
-    caption = fr"Mean runtime (ms) and standard deviation for fixed $d={fixed_d}$."
-    label = fr"tab:runtime_d{fixed_d}"
+    if what == "mean":
+        caption = fr"Mean runtime (ms) for fixed $d={fixed_d}$."
+        label = fr"tab:runtime_mean_d{fixed_d}"
+    else:
+        caption = fr"Runtime standard deviation (ms) for fixed $d={fixed_d}$."
+        label = fr"tab:runtime_sd_d{fixed_d}"
 
     latex_str = table_df.to_latex(
         escape=False,
@@ -316,17 +326,18 @@ def latex_table_fixed_d(df: pd.DataFrame, fixed_d: int, precision: int = 3):
         column_format="l" + "c" * len(ns),
     )
 
-    out_path = TABLE_DIR / f"runtime_fixed_d{fixed_d}.tex"
+    out_path = TABLE_DIR / f"runtime_fixed_d{fixed_d}_{what}.tex"
     with open(out_path, "w") as f:
         f.write(latex_str)
 
     print(f"[INFO] Saved {out_path}")
 
 
-def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3):
+def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3, what: str = "mean"):
     """
     For a fixed n, produce a LaTeX table:
-    rows = methods, columns = d, entries = mean(std) in ms.
+    rows = methods, columns = d, entries = mean runtime or SD (ms).
+    what: "mean" for mean runtime (best bolded), "sd" for standard deviation.
     """
     sub = df[df["n"] == fixed_n].copy()
     if sub.empty:
@@ -336,6 +347,9 @@ def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3):
     sub = sub.sort_values(["method", "d"])
     methods = [m for m in METHOD_ORDER if m in sub["method"].unique()]
     ds = sorted(sub["d"].unique())
+
+    fmt = f"{{:.{precision}g}}"
+    best_mean_per_d = {d: sub[sub["d"] == d]["mean_ms"].min() for d in ds}
 
     table_data = {}
     for m in methods:
@@ -347,7 +361,10 @@ def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3):
             else:
                 mean_ms = entry["mean_ms"].iloc[0]
                 std_ms = entry["std_ms"].iloc[0]
-                cell = format_cell(mean_ms, std_ms, precision=precision)
+                val = mean_ms if what == "mean" else std_ms
+                cell = fmt.format(val)
+                if what == "mean" and mean_ms == best_mean_per_d[d]:
+                    cell = r"\textbf{" + cell + r"}"
             row.append(cell)
         table_data[m] = row
 
@@ -355,8 +372,12 @@ def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3):
     table_df.index.name = "Method"
     table_df.columns = [fr"$d={d}$" for d in ds]
 
-    caption = fr"Mean runtime (ms) and standard deviation for fixed $n={fixed_n}$."
-    label = fr"tab:runtime_n{fixed_n}"
+    if what == "mean":
+        caption = fr"Mean runtime (ms) for fixed $n={fixed_n}$."
+        label = fr"tab:runtime_mean_n{fixed_n}"
+    else:
+        caption = fr"Runtime standard deviation (ms) for fixed $n={fixed_n}$."
+        label = fr"tab:runtime_sd_n{fixed_n}"
 
     latex_str = table_df.to_latex(
         escape=False,
@@ -365,7 +386,7 @@ def latex_table_fixed_n(df: pd.DataFrame, fixed_n: int, precision: int = 3):
         column_format="l" + "c" * len(ds),
     )
 
-    out_path = TABLE_DIR / f"runtime_fixed_n{fixed_n}.tex"
+    out_path = TABLE_DIR / f"runtime_fixed_n{fixed_n}_{what}.tex"
     with open(out_path, "w") as f:
         f.write(latex_str)
 
@@ -492,12 +513,14 @@ def main():
 
     # LaTeX tables for fixed d
     for d in FIXED_D_FOR_N_SWEEPS:
-        latex_table_fixed_d(df_ag, fixed_d=d, precision=3)
+        latex_table_fixed_d(df_ag, fixed_d=d, precision=3, what="mean")
+        latex_table_fixed_d(df_ag, fixed_d=d, precision=3, what="sd")
         latex_radius_table_fixed_d(df_ag, fixed_d=d, precision=4)
 
     # LaTeX tables for fixed n
     for n in FIXED_N_FOR_D_SWEEPS:
-        latex_table_fixed_n(df_ag, fixed_n=n, precision=3)
+        latex_table_fixed_n(df_ag, fixed_n=n, precision=3, what="mean")
+        latex_table_fixed_n(df_ag, fixed_n=n, precision=3, what="sd")
         latex_radius_table_fixed_n(df_ag, fixed_n=n, precision=4)
 
 

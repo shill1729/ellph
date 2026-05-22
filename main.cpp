@@ -90,8 +90,8 @@ int main(int argc, char** argv) {
 
     // Grid in (n,d)
     // TODO: make these passable arguments?
-    const int d_values[] = {2, 3, 4, 5, 10, 20, 30, 50};
-    const int n_values[] = {2, 3, 4, 5, 10, 15};
+    const int d_values[] = {2, 4, 8, 16};
+    const int n_values[] = {2, 4, 8, 16, 32, 64, 128};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
@@ -145,7 +145,7 @@ int main(int argc, char** argv) {
 
                 // Build objective and LP oracle for this instance
                 auto K = make_Kobjective_from_ellipsoids(1.0, Es);
-                EllipsoidLPOracle O(Es, d, LPParams{BasisSolverKind::DualSLSQP, 1e-8});
+                EllipsoidLPOracle O_slsqp(Es, d, LPParams{BasisSolverKind::DualSLSQP, 1e-8});
                 EllipsoidLPOracle O_socp(Es, d, LPParams{BasisSolverKind::PrimalSOCP, 1e-5});
                 std::vector<int> S(n);
                 std::iota(S.begin(), S.end(), 0);
@@ -212,14 +212,14 @@ int main(int argc, char** argv) {
                     bool ok = true;
                     double ms = time_ms([&]() {
                         try {
-                            out = seidel_incremental(O, S, so);
+                            out = seidel_incremental(O_slsqp, S, so);
                         } catch (const nlopt::roundoff_limited&) {
                             ok = false;
                             std::cerr << "[d=" << d << " n=" << n << " trial=" << trial
                                       << " LP-Seidel] roundoff_limited\n";
                         }
                     });
-                    if (ok) stats_lp_seidel.push(ms, full_radius_for_basis(O, out.basis.idx, Es));
+                    if (ok) stats_lp_seidel.push(ms, full_radius_for_basis(O_slsqp, out.basis.idx, Es));
                 }
 
                 {
@@ -252,14 +252,14 @@ int main(int argc, char** argv) {
                     double ms = time_ms([&]() {
                         
                         try {
-                            out = clarkson_iterative(O, S, co);
+                            out = clarkson_iterative(O_slsqp, S, co);
                         } catch (const nlopt::roundoff_limited&) {
                             ok = false;
                             std::cerr << "[d=" << d << " n=" << n << " trial=" << trial
                                       << " LP-Clarkson] roundoff_limited\n";
                         }
                     });
-                    if (ok) stats_lp_clarkson.push(ms, full_radius_for_basis(O, out.basis.idx, Es));
+                    if (ok) stats_lp_clarkson.push(ms, full_radius_for_basis(O_slsqp, out.basis.idx, Es));
                 }
 
                 {
@@ -299,8 +299,8 @@ int main(int argc, char** argv) {
             write_row("Raw-PGD",      stats_raw_pgd);
             write_row("Raw-Cauchy",   stats_raw_cauchy);
             write_row("Raw-SOCP",     stats_raw_socp);
-            write_row("LP-Seidel",    stats_lp_seidel);
-            write_row("LP-Clarkson",  stats_lp_clarkson);
+            write_row("LP-Seidel-SLSQP",    stats_lp_seidel);
+            write_row("LP-Clarkson-SLSQP",  stats_lp_clarkson);
             write_row("LP-Seidel-SOCP",   stats_lp_seidel_socp);
             write_row("LP-Clarkson-SOCP", stats_lp_clarkson_socp);
 
