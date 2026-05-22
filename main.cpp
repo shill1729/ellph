@@ -90,8 +90,8 @@ int main(int argc, char** argv) {
 
     // Grid in (n,d)
     // TODO: make these passable arguments?
-    const int d_values[] = {2, 3, 4, 5, 10, 20, 50, 100};
-    const int n_values[] = {2, 3, 4, 5, 10, 15, 20, 30, 50, 75, 100};
+    const int d_values[] = {2, 3, 4, 5, 10, 20, 30, 50};
+    const int n_values[] = {2, 3, 4, 5, 10, 15};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
