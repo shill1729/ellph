@@ -89,7 +89,7 @@ if(APPLE)
         "/opt/homebrew/opt/nlopt/lib"
     )
 
-    # Link against NLopt (Boost is header-only for what you are doing)
+    # Link against NLopt (Boost is header-only for our purposes)
     target_link_libraries(main PRIVATE
         nlopt
         alglib

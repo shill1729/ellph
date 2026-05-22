@@ -17,7 +17,7 @@ public:
     const Vec& center() const noexcept { return center_; }
     double radius() const noexcept { return radius_; }
 
-    // Guaranteed SPD (throws std::runtime_error if inversion fails, which shouldn't happen if SPD)
+    // Guaranteed symmetric PD (throws std::runtime_error if inversion fails, which shouldn't happen if symmetric PD)
     const Mat& covariance() const;
     const Mat& precision()  const;
 

@@ -20,7 +20,7 @@ const Ellipsoid::Mat& Ellipsoid::covariance() const {
     // Compute Σ = (A^{-1})^{-1} by robust Cholesky
     Eigen::LLT<Mat> llt(*prec_);
     if (llt.info() != Eigen::Success) {
-        throw std::runtime_error("Ellipsoid: precision not SPD (LLT failed).");
+        throw std::runtime_error("Ellipsoid: precision not symmetric PD (LLT failed).");
     }
     // Invert via Cholesky: inv(A) = L^{-T} L^{-1}
     Mat L = llt.matrixL();
@@ -33,7 +33,7 @@ const Ellipsoid::Mat& Ellipsoid::precision() const {
     if (prec_) return *prec_;
     Eigen::LLT<Mat> llt(*cov_);
     if (llt.info() != Eigen::Success) {
-        throw std::runtime_error("Ellipsoid: covariance not SPD (LLT failed).");
+        throw std::runtime_error("Ellipsoid: covariance not symmetric PD (LLT failed).");
     }
     Mat L = llt.matrixL();
     Mat Linv = L.inverse();

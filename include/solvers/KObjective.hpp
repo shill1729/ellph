@@ -3,7 +3,7 @@
 #include <vector>
 
 // K_epsilon(λ) = ε^2 - C(λ) on the probability simplex
-// Data: centers x_i (d-vectors) and precision matrices A_i^{-1} (d×d, SPD).
+// Data: centers x_i (d-vectors) and precision matrices A_i^{-1} (d×d, PD).
 
 class KObjective {
 public:
@@ -42,7 +42,7 @@ private:
     std::vector<double> q_;      // q_i = x_i^T A_i^{-1} x_i
 
     // Scratch (reused to avoid allocs)
-    Mat S_;            // S(λ) = sum λ_i A_i^{-1}, SPD
+    Mat S_;            // S(λ) = sum λ_i A_i^{-1}, symmetric PD when lambda is on simplex
     Eigen::LLT<Mat> lltS_;
     Vec mu_;           // mu(λ) = sum λ_i A_i^{-1} x_i
     Vec m_;            // centroid m(λ): solves S m = mu

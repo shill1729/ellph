@@ -46,7 +46,7 @@ std::vector<Ellipsoid> RandomEllipsoidGenerator::generate() {
             // store precision, not covariance
             Eigen::LLT<Mat> llt(cov);
             if (llt.info() != Eigen::Success) {
-                throw std::runtime_error("Generated covariance is not SPD (LLT failed).");
+                throw std::runtime_error("Generated covariance is not symmetric PD (LLT failed).");
             }
             Mat L = llt.matrixL();
             Mat Linv = L.inverse();
@@ -107,13 +107,13 @@ RandomEllipsoidGenerator::Mat RandomEllipsoidGenerator::spd_from_wishart() {
 
     Eigen::LLT<Mat> llt(S);
     if (llt.info() != Eigen::Success) {
-        // In the extremely rare case numerical SPD is lost, nudge the diagonal
+        // In the extremely rare case numerical symmetric PD is lost, nudge the diagonal
         Mat I = Mat::Identity(d, d);
         double eps = 1e-10;
         Mat Sreg = S + eps * I;
         Eigen::LLT<Mat> llt2(Sreg);
         if (llt2.info() != Eigen::Success) {
-            throw std::runtime_error("Wishart draw failed to be SPD even after regularization.");
+            throw std::runtime_error("Wishart draw failed to be symmetric PD even after regularization.");
         }
         return Sreg;
     }

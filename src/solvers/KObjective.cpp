@@ -40,7 +40,7 @@ void KObjective::assemble_S_mu(const Vec& lambda) {
     }
     lltS_.compute(S_);
     if (lltS_.info() != Eigen::Success) {
-        throw std::runtime_error("LLT failed: S(λ) must be SPD.");
+        throw std::runtime_error("LLT failed: S(λ) must be symmetric PD.");
     }
     // Sm_ = S*m = mu_; but m unknown yet
     Sm_ = mu_;

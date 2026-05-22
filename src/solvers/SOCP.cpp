@@ -23,7 +23,7 @@ std::vector<Mat> cholesky_factors(const std::vector<Ellipsoid>& ellipsoids) {
     for (const auto& ellipsoid : ellipsoids) {
         Eigen::LLT<Mat> llt(ellipsoid.precision());
         if (llt.info() != Eigen::Success) {
-            throw std::runtime_error("SOCP: ellipsoid precision is not SPD.");
+            throw std::runtime_error("SOCP: ellipsoid precision is not symmetric PD.");
         }
         factors.push_back(Mat(llt.matrixL().transpose()));
     }
