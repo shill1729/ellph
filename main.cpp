@@ -16,6 +16,9 @@
 #include <vector>
 
 using Clock = std::chrono::high_resolution_clock;
+int MAX_DEPTH = 5; // For Seidel. Should be D=d+1 for an exact solver.
+// Lowering it will yield suboptimal basis certificates as an approximation.
+// They matched the true radius certificate for 
 
 template <class F>
 double time_ms(F&& f) {
@@ -90,8 +93,17 @@ int main(int argc, char** argv) {
 
     // Grid in (n,d)
     // TODO: make these passable arguments?
-    const int d_values[] = {2, 4, 8, 16};
-    const int n_values[] = {2, 4, 8, 16, 32, 64, 128};
+    // Even sweep on moderate grid
+    const int d_values[] = {2, 4, 8, 16, 32};
+    const int n_values[] = {2, 4, 8, 16, 32};
+
+    // Large TDA-relevant Sweep on number of ellipses
+    // const int d_values[] = {2, 3};
+    // const int n_values[] = {2, 4, 8, 16, 32, 64, 128, 256};
+
+    // Large TDA-revelant sweep on ambient dimension
+    // const int d_values[] = {2, 4, 8, 16, 32, 64, 128, 256};
+    // const int n_values[] = {2, 3};
 
     // Open CSV output
     const std::string filename = "build/benchmark_results.csv";
@@ -206,7 +218,7 @@ int main(int argc, char** argv) {
                 {
                     SeidelOptions so;
                     so.seed = 42;
-                    so.max_depth = -1;
+                    so.max_depth = MAX_DEPTH;
 
                     SeidelResult out;
                     bool ok = true;
@@ -225,7 +237,7 @@ int main(int argc, char** argv) {
                 {
                     SeidelOptions so;
                     so.seed = 42;
-                    so.max_depth = -1;
+                    so.max_depth = MAX_DEPTH;
 
                     SeidelResult out;
                     bool ok = true;
