@@ -48,6 +48,8 @@ private:
     Vec m_;            // centroid m(λ): solves S m = mu
     Vec Sm_;           // S*m == mu (cheap to keep)
     Vec d2_;           // per-index squared Mahalanobis to m(λ)
+    std::vector<Vec> Ax_; // Ax_[i] = Ainv_[i] * centers_[i], precomputed in constructor
+    Vec diff_;            // scratch vector for distances_squared
 
     void assemble_S_mu(const Vec& lambda); // builds S_, mu_, lltS_
     void solve_centroid();                  // m_ from S m = mu

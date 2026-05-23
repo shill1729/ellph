@@ -17,8 +17,10 @@ KObjective::KObjective(double epsilon,
     }
 
     q_.resize(k);
+    Ax_.resize(k);
     for (int i = 0; i < k; ++i) {
-        q_[i] = centers_[i].transpose() * (Ainv_[i] * centers_[i]);
+        Ax_[i].noalias() = Ainv_[i] * centers_[i];
+        q_[i] = centers_[i].dot(Ax_[i]);
     }
 
     S_.resize(dim_, dim_);
@@ -26,6 +28,7 @@ KObjective::KObjective(double epsilon,
     m_.resize(dim_);
     Sm_.resize(dim_);
     d2_.setZero(k);
+    diff_.resize(dim_);
 }
 
 void KObjective::assemble_S_mu(const Vec& lambda) {
@@ -36,7 +39,7 @@ void KObjective::assemble_S_mu(const Vec& lambda) {
         const double w = lambda[i];
         if (w == 0.0) continue;
         S_.noalias() += w * Ainv_[i];
-        mu_.noalias() += w * (Ainv_[i] * centers_[i]);
+        mu_.noalias() += w * Ax_[i];
     }
     lltS_.compute(S_);
     if (lltS_.info() != Eigen::Success) {
@@ -64,8 +67,8 @@ double KObjective::C_value() const {
 void KObjective::distances_squared() {
     const int k = static_cast<int>(centers_.size());
     for (int j = 0; j < k; ++j) {
-        const Vec diff = m_ - centers_[j];
-        d2_[j] = diff.transpose() * (Ainv_[j] * diff);
+        diff_.noalias() = m_ - centers_[j];
+        d2_[j] = diff_.dot(Ainv_[j] * diff_);
     }
 }
 
@@ -98,20 +101,20 @@ double KObjective::value_grad_hess(const Eigen::Ref<const Vec>& lambda,
     if (hess.rows() != k || hess.cols() != k)
         throw std::invalid_argument("value_grad_hess: hess wrong shape");
 
-    const double val = value_grad(lambda, grad); // will fill grad
+    const double val = value_grad(lambda, grad); // fills m_, lltS_, d2_, grad
 
-    // Build Hessian into provided matrix (no resize)
-    std::vector<Vec> y(k, Vec::Zero(d()));
+    // U[:,j] = A_j^{-1} * (m - x_j) for all j  (d x k)
+    Mat U(d(), k);
     for (int j = 0; j < k; ++j) {
-        const Vec rhs = Ainv_[j] * (m_ - centers_[j]);
-        y[j] = lltS_.solve(rhs);
-        if (lltS_.info() != Eigen::Success)
-            throw std::runtime_error("LLT solve failed in Hessian.");
+        diff_.noalias() = m_ - centers_[j];
+        U.col(j).noalias() = Ainv_[j] * diff_;
     }
-    for (int i = 0; i < k; ++i) {
-        const Vec left = Ainv_[i] * (m_ - centers_[i]);
-        for (int j = 0; j < k; ++j)
-            hess(i,j) = 2.0 * left.dot(y[j]);
-    }
+
+    // Single batched Cholesky solve: W = S^{-1} * U  (d x k)
+    const Mat W = lltS_.solve(U);
+
+    // H[i,j] = 2 * U[:,i]^T * W[:,j]  =>  H = 2 * U^T * W
+    hess.noalias() = 2.0 * U.transpose() * W;
+
     return val;
 }

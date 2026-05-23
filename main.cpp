@@ -102,6 +102,9 @@ int main(int argc, char** argv) {
     // const int n_values[] = {2, 4, 8, 16, 32, 64, 128, 256};
 
     // Large TDA-revelant sweep on ambient dimension
+    // This is the most relevant time-measurements for Ellipsoidal-TDA
+    // because we are only interested in adding edges, faces, etc which 
+    // involves checking every pair and triple, etc.
     // const int d_values[] = {2, 4, 8, 16, 32, 64, 128, 256};
     // const int n_values[] = {2, 3};
 
