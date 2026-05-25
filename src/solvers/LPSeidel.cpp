@@ -2,14 +2,7 @@
 #include <random>
 #include <algorithm>
 
-// Matches Python reference:
-//   recurse(prefix_end, R):
-//     if |R| > D or prefix_end == 0:
-//         return compute_basis(perm[0:prefix_end] + R)
-//     res = recurse(prefix_end - 1, R)
-//     j = perm[prefix_end - 1]
-//     if violates(res, j): return recurse(prefix_end - 1, R + [j])
-//     return res
+
 static void seidel_inner(const EllipsoidLPOracle& O,
                          const std::vector<int>& perm,
                          int prefix_end,

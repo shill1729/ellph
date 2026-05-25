@@ -8,10 +8,10 @@ inline KObjective make_Kobjective_from_ellipsoids(
         const std::vector<Ellipsoid>& Es)
 {
     std::vector<KObjective::Vec> xs; xs.reserve(Es.size());
-    std::vector<KObjective::Mat> Ainv; Ainv.reserve(Es.size());
+    std::vector<KObjective::Mat> A; A.reserve(Es.size());
     for (const auto& E : Es) {
         xs.push_back(E.center());
-        Ainv.push_back(E.precision());
+        A.push_back(E.precision());
     }
-    return KObjective(epsilon, xs, Ainv);
+    return KObjective(epsilon, xs, A);
 }

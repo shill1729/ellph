@@ -10,14 +10,14 @@ public:
     Ellipsoid() = default;
 
     // Construct with center and either covariance or precision.
-    // Provide exactly one of (cov, prec); the other will be computed lazily.
+    // Provide exactly one of (cov, prec);
     Ellipsoid(Vec center, std::optional<Mat> cov, std::optional<Mat> prec, double radius = 1.0);
 
     // Accessors
     const Vec& center() const noexcept { return center_; }
     double radius() const noexcept { return radius_; }
 
-    // Guaranteed symmetric PD (throws std::runtime_error if inversion fails, which shouldn't happen if symmetric PD)
+    // Guaranteed symmetric PD
     const Mat& covariance() const;
     const Mat& precision()  const;
 

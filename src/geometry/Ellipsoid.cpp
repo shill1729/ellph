@@ -17,14 +17,14 @@ Ellipsoid::Ellipsoid(Vec center, std::optional<Mat> cov, std::optional<Mat> prec
 
 const Ellipsoid::Mat& Ellipsoid::covariance() const {
     if (cov_) return *cov_;
-    // Compute Σ = (A^{-1})^{-1} by robust Cholesky
+    // Compute Σ = A^{-1} by robust Cholesky
     Eigen::LLT<Mat> llt(*prec_);
     if (llt.info() != Eigen::Success) {
         throw std::runtime_error("Ellipsoid: precision not symmetric PD (LLT failed).");
     }
     // Invert via Cholesky: inv(A) = L^{-T} L^{-1}
     Mat L = llt.matrixL();
-    Mat Linv = L.inverse();   // For d<=~100 this is fine; for larger d prefer triangular solves on demand
+    Mat Linv = L.inverse();   // For d<=~100 this is fine; 
     cov_.emplace(Linv.transpose() * Linv);
     return *cov_;
 }

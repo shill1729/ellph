@@ -130,6 +130,8 @@ def plot_runtime_vs_d(df: pd.DataFrame, fixed_n: int, use_logy: bool = True):
 
     plt.xlabel(r"$d$ (dimension)")
     plt.ylabel("Mean runtime (ms)")
+    # Exact x-axis tick labels.
+    plt.xticks(subset["d"].unique())
     plt.title(fr"Mean runtime vs $d$ at fixed $n={fixed_n}$")
     plt.grid(True, which="both", linestyle="--", alpha=0.3)
     plt.legend()

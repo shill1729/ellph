@@ -3,7 +3,7 @@
 #include <vector>
 
 // K_epsilon(λ) = ε^2 - C(λ) on the probability simplex
-// Data: centers x_i (d-vectors) and precision matrices A_i^{-1} (d×d, PD).
+// Data: centers x_i (d-vectors) and precision matrices A_i = Sigma_i^{-1} (d×d, PD), where Sigma is the covariance
 
 class KObjective {
 public:
@@ -12,18 +12,12 @@ public:
 
     KObjective(double epsilon,
                const std::vector<Vec>& centers,
-               const std::vector<Mat>& precisions); // A_i^{-1}
+               const std::vector<Mat>& precisions); // A_i = Sigma_i^{-1}
 
     int k() const noexcept { return static_cast<int>(centers_.size()); }
     int d() const noexcept { return dim_; }
 
     // Evaluate K(λ), gradient g, and optionally Hessian H.
-    // λ is size k, simplex-feasible (nonnegative, sum=1).
-    // double value(const Vec& lambda);
-    // double value_grad(const Vec& lambda, Vec& grad);
-    // double value_grad_hess(const Vec& lambda, Vec& grad, Mat& hess);
-
-    // ?
     double value(const Eigen::Ref<const Vec>& lambda);
     double value_grad(const Eigen::Ref<const Vec>& lambda, Eigen::Ref<Vec> grad);
     double value_grad_hess(const Eigen::Ref<const Vec>& lambda,
@@ -32,23 +26,23 @@ public:
 
     // Accessors for downstream use (distances, m(λ))
     const Vec& centroid() const noexcept { return m_; }
-    const Vec& mahalanobis_d2() const noexcept { return d2_; } // d_j^2 = (m-x_j)^T A_j^{-1} (m-x_j)
+    const Vec& mahalanobis_d2() const noexcept { return d2_; } // d_j^2 = (m-x_j)^T A_j (m-x_j)
 
 private:
     double eps_;
     int dim_;
     std::vector<Vec> centers_;
-    std::vector<Mat> Ainv_;      // A_i^{-1}
-    std::vector<double> q_;      // q_i = x_i^T A_i^{-1} x_i
+    std::vector<Mat> A_;      // A_i = Sigma_i^{-1}
+    std::vector<double> q_;      // q_i = x_i^T A_i x_i
 
     // Scratch (reused to avoid allocs)
-    Mat S_;            // S(λ) = sum λ_i A_i^{-1}, symmetric PD when lambda is on simplex
+    Mat S_;            // S(λ) = sum λ_i A_i, symmetric PD when lambda is on simplex
     Eigen::LLT<Mat> lltS_;
-    Vec mu_;           // mu(λ) = sum λ_i A_i^{-1} x_i
+    Vec mu_;           // mu(λ) = sum λ_i A_i x_i
     Vec m_;            // centroid m(λ): solves S m = mu
     Vec Sm_;           // S*m == mu (cheap to keep)
     Vec d2_;           // per-index squared Mahalanobis to m(λ)
-    std::vector<Vec> Ax_; // Ax_[i] = Ainv_[i] * centers_[i], precomputed in constructor
+    std::vector<Vec> Ax_; // Ax_[i] = A_[i] * centers_[i], precomputed in constructor
     Vec diff_;            // scratch vector for distances_squared
 
     void assemble_S_mu(const Vec& lambda); // builds S_, mu_, lltS_

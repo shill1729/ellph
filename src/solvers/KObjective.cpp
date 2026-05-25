@@ -4,22 +4,22 @@
 KObjective::KObjective(double epsilon,
                        const std::vector<Vec>& centers,
                        const std::vector<Mat>& precisions)
-: eps_(epsilon), dim_(0), centers_(centers), Ainv_(precisions)
+: eps_(epsilon), dim_(0), centers_(centers), A_(precisions)
 {
     const int k = static_cast<int>(centers_.size());
-    if (k == 0 || centers_.size() != Ainv_.size())
+    if (k == 0 || centers_.size() != A_.size())
         throw std::invalid_argument("centers and precisions must be nonempty and same length.");
 
     dim_ = static_cast<int>(centers_[0].size());
     for (int i = 0; i < k; ++i) {
-        if (centers_[i].size() != dim_ || Ainv_[i].rows() != dim_ || Ainv_[i].cols() != dim_)
+        if (centers_[i].size() != dim_ || A_[i].rows() != dim_ || A_[i].cols() != dim_)
             throw std::invalid_argument("dimension mismatch in centers/precisions.");
     }
 
     q_.resize(k);
     Ax_.resize(k);
     for (int i = 0; i < k; ++i) {
-        Ax_[i].noalias() = Ainv_[i] * centers_[i];
+        Ax_[i].noalias() = A_[i] * centers_[i];
         q_[i] = centers_[i].dot(Ax_[i]);
     }
 
@@ -38,7 +38,7 @@ void KObjective::assemble_S_mu(const Vec& lambda) {
     for (int i = 0; i < k; ++i) {
         const double w = lambda[i];
         if (w == 0.0) continue;
-        S_.noalias() += w * Ainv_[i];
+        S_.noalias() += w * A_[i];
         mu_.noalias() += w * Ax_[i];
     }
     lltS_.compute(S_);
@@ -68,7 +68,7 @@ void KObjective::distances_squared() {
     const int k = static_cast<int>(centers_.size());
     for (int j = 0; j < k; ++j) {
         diff_.noalias() = m_ - centers_[j];
-        d2_[j] = diff_.dot(Ainv_[j] * diff_);
+        d2_[j] = diff_.dot(A_[j] * diff_);
     }
 }
 
@@ -107,7 +107,7 @@ double KObjective::value_grad_hess(const Eigen::Ref<const Vec>& lambda,
     Mat U(d(), k);
     for (int j = 0; j < k; ++j) {
         diff_.noalias() = m_ - centers_[j];
-        U.col(j).noalias() = Ainv_[j] * diff_;
+        U.col(j).noalias() = A_[j] * diff_;
     }
 
     // Single batched Cholesky solve: W = S^{-1} * U  (d x k)

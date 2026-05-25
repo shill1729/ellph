@@ -6,7 +6,7 @@ namespace Simplex {
 // Project z onto the probability simplex Δ_k = {λ ≥ 0, 1^T λ = 1}.
 Eigen::VectorXd project_to_simplex(const Eigen::VectorXd& z);
 
-// Make a strictly interior start (optional).
+// Make a strictly interior start
 Eigen::VectorXd uniform_start(int k) ;
 
 // Backtracking Armijo on the simplex along a feasible direction dir with projection.

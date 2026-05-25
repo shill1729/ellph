@@ -24,11 +24,11 @@ public:
         // Wishart parameters: W_d(df, S). Here S = I (scale), df >= d
         int wishart_df = 0; // if 0, defaults to d + 2
 
-        // Whether to store Σ (covariance) or A^{-1} (precision) at construction
-        bool store_covariance = true;
+        // Whether to store Σ (covariance) or A=Sigma^{-1} (precision) at construction
+        // If store_covariance==true, A = Σ^{-1}; if false, A is the provided precision itself.
+        bool store_covariance = false;
 
         // Radius parameter for the geometric ellipsoid { x : (x-c)^T A (x-c) <= radius^2 }
-        // If store_covariance==true, A = Σ^{-1}; if false, A is the provided precision itself.
         double radius = 1.0;
 
         // RNG seed
